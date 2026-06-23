@@ -114,7 +114,7 @@ fn parse_records_inner(bytes: &[u8]) -> Vec<EvtxRow> {
             channel: system.and_then(|s| string_field(s, "Channel")),
             computer: system.and_then(|s| string_field(s, "Computer")),
             level: system.and_then(|s| int_field(s, "Level")),
-            time_created_micros: Some(rec.timestamp.timestamp_micros()),
+            time_created_micros: Some(rec.timestamp.as_microsecond()),
             event_json: rec.data,
         });
     }
