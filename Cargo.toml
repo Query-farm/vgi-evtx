@@ -27,7 +27,7 @@ arrow-schema = "58"
 # 1.86. `default-features = false` drops the optional `simplelog` logging feature
 # (which transitively pulls a `time` that also requires rustc 1.88) — we only
 # need the parser. The JSON output is consumed via serde_json.
-evtx = { version = "0.8.5", default-features = false }
+evtx = { version = "0.12.2", default-features = false }
 serde_json = "1"
 
 [profile.release]
