@@ -1,0 +1,34 @@
+[workspace]
+resolver = "2"
+members = ["crates/evtx-worker"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.86"
+license = "MIT"
+authors = ["Query Farm LLC <hello@query.farm>"]
+repository = "https://github.com/Query-farm/vgi-evtx"
+
+[workspace.dependencies]
+# VGI Rust SDK (worker side), published on crates.io. Pulls in vgi-rpc 0.2 and
+# arrow 58 transitively; keep arrow/vgi-rpc here in lockstep with vgi's pins so a
+# single arrow/vgi-rpc resolves.
+vgi = "0.5.0"
+vgi-rpc = { version = "0.2.0", default-features = false, features = ["macros", "http"] }
+arrow-array = "58"
+arrow-buffer = "58"
+arrow-schema = "58"
+
+# Windows Event Log (.evtx) parser — pure Rust, dual MIT/Apache-2.0
+# (omerbenamram/evtx). We pin to 0.8.5 deliberately: evtx >= 0.10 is edition
+# 2024 / uses let-chains and requires rustc >= 1.88, which would bump the
+# workspace MSRV above the pinned 1.86. 0.8.5 is edition 2021 and builds clean on
+# 1.86. `default-features = false` drops the optional `simplelog` logging feature
+# (which transitively pulls a `time` that also requires rustc 1.88) — we only
+# need the parser. The JSON output is consumed via serde_json.
+evtx = { version = "0.8.5", default-features = false }
+serde_json = "1"
+
+[profile.release]
+opt-level = 2

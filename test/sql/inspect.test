@@ -1,0 +1,97 @@
+# name: test/sql/inspect.test
+# group: [vgi_evtx]
+#
+# evtx_record_count() / is_valid_evtx() scalars over real fixture BLOBs (via
+# read_blob) and over garbage. These are hardened: malformed/garbage input
+# yields 0 / false, never a crash. NULL in -> NULL out.
+
+require-env VGI_EVTX_WORKER
+
+statement ok
+LOAD vgi;
+
+statement ok
+ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION '${VGI_EVTX_WORKER}');
+
+statement ok
+SET search_path = 'evtx.main';
+
+# Record count over the fixture BLOB.
+query I
+SELECT evtx_record_count(content) FROM read_blob('test/sql/data/sample-security.evtx');
+----
+7
+
+# The fixture is a valid .evtx.
+query I
+SELECT is_valid_evtx(content) FROM read_blob('test/sql/data/sample-security.evtx');
+----
+true
+
+# A VARCHAR path also works for the scalars.
+query I
+SELECT evtx_record_count('test/sql/data/sample-security.evtx');
+----
+7
+
+query I
+SELECT is_valid_evtx('test/sql/data/sample-security.evtx');
+----
+true
+
+# Garbage bytes: count 0, not valid, no crash.
+query I
+SELECT evtx_record_count('this is not an evtx file'::BLOB);
+----
+0
+
+query I
+SELECT is_valid_evtx('this is not an evtx file'::BLOB);
+----
+false
+
+# Empty BLOB: count 0, not valid.
+query I
+SELECT evtx_record_count(''::BLOB);
+----
+0
+
+query I
+SELECT is_valid_evtx(''::BLOB);
+----
+false
+
+# A non-existent path resolves to no usable input -> NULL (distinct from a
+# garbage BLOB, which is "present but invalid" -> 0 / false). No error, no crash.
+query I
+SELECT evtx_record_count('test/sql/data/nope.evtx') IS NULL;
+----
+true
+
+query I
+SELECT is_valid_evtx('test/sql/data/nope.evtx') IS NULL;
+----
+true
+
+# NULL in -> NULL out for both scalars.
+query I
+SELECT evtx_record_count(NULL::BLOB) IS NULL;
+----
+true
+
+query I
+SELECT is_valid_evtx(NULL::BLOB) IS NULL;
+----
+true
+
+# evtx_version() returns a non-empty string.
+query I
+SELECT length(evtx_version()) > 0;
+----
+true
+
+statement ok
+USE memory;
+
+statement ok
+DETACH evtx;

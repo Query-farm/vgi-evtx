@@ -1,0 +1,98 @@
+# name: test/sql/records.test
+# group: [vgi_evtx]
+#
+# evtx_records() table function over the committed clean Security.evtx fixture.
+# The input is a CONSTANT (DuckDB table functions don't take subqueries): here a
+# VARCHAR path the worker opens. event_json carries the full normalized event so
+# the result composes with vgi-sigma's sigma_match(event_json, rule).
+
+require-env VGI_EVTX_WORKER
+
+statement ok
+LOAD vgi;
+
+statement ok
+ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION '${VGI_EVTX_WORKER}');
+
+statement ok
+SET search_path = 'evtx.main';
+
+# The fixture has exactly 7 records.
+query I
+SELECT count(*) FROM evtx_records('test/sql/data/sample-security.evtx');
+----
+7
+
+# Per-record id/event_id/provider/channel, ordered for determinism.
+query IITT
+SELECT record_id, event_id, provider, channel
+FROM evtx_records('test/sql/data/sample-security.evtx')
+ORDER BY record_id;
+----
+1	5152	Microsoft-Windows-Security-Auditing	Security
+2	4611	Microsoft-Windows-Security-Auditing	Security
+3	4776	Microsoft-Windows-Security-Auditing	Security
+4	4625	Microsoft-Windows-Security-Auditing	Security
+5	5152	Microsoft-Windows-Security-Auditing	Security
+6	5157	Microsoft-Windows-Security-Auditing	Security
+7	4673	Microsoft-Windows-Security-Auditing	Security
+
+# The lifted typed columns are non-null on every row.
+query I
+SELECT count(*)
+FROM evtx_records('test/sql/data/sample-security.evtx')
+WHERE event_id IS NOT NULL AND provider IS NOT NULL AND time_created IS NOT NULL;
+----
+7
+
+# time_created is a real TIMESTAMP from the 2016 capture.
+query I
+SELECT count(*)
+FROM evtx_records('test/sql/data/sample-security.evtx')
+WHERE time_created BETWEEN TIMESTAMP '2016-06-29 00:00:00' AND TIMESTAMP '2016-06-30 00:00:00';
+----
+7
+
+# event_json carries the full event text (composes with vgi-sigma over it). The
+# record with event_id 4625 is the one whose JSON mentions the failed-logon
+# substatus; here we just confirm the full JSON is present and references the
+# Security-Auditing provider on every row.
+query I
+SELECT count(*)
+FROM evtx_records('test/sql/data/sample-security.evtx')
+WHERE event_json LIKE '%Microsoft-Windows-Security-Auditing%'
+  AND length(event_json) > 100;
+----
+7
+
+# The event_id we lifted matches what's embedded in event_json for record 4.
+query I
+SELECT record_id
+FROM evtx_records('test/sql/data/sample-security.evtx')
+WHERE event_id = 4625 AND event_json LIKE '%"EventID": 4625%';
+----
+4
+
+# A bad/garbage path -> no rows (no error, no crash).
+query I
+SELECT count(*) FROM evtx_records('test/sql/data/does-not-exist.evtx');
+----
+0
+
+# NULL input -> no rows.
+query I
+SELECT count(*) FROM evtx_records(NULL);
+----
+0
+
+# Garbage bytes (a BLOB literal that is not a .evtx) -> no rows.
+query I
+SELECT count(*) FROM evtx_records('not a real evtx file'::BLOB);
+----
+0
+
+statement ok
+USE memory;
+
+statement ok
+DETACH evtx;
