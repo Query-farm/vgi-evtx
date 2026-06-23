@@ -69,7 +69,7 @@ WHERE event_json LIKE '%Microsoft-Windows-Security-Auditing%'
 query I
 SELECT record_id
 FROM evtx_records('test/sql/data/sample-security.evtx')
-WHERE event_id = 4625 AND event_json LIKE '%"EventID": 4625%';
+WHERE event_id = 4625 AND event_json LIKE '%"EventID":4625%';
 ----
 4
 
