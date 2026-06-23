@@ -1,3 +1,9 @@
+<p align="center">
+  <img src="docs/vgi-logo.png" alt="Vector Gateway Interface (VGI)" width="320">
+</p>
+
+<p align="center"><em>A <a href="https://query.farm">Query.Farm</a> VGI worker for DuckDB.</em></p>
+
 # vgi-evtx
 
 A [VGI](https://query.farm) worker (Rust, a compiled binary) that parses
@@ -109,3 +115,12 @@ event log from the `evtx` crate's own test corpus. See
 ## License
 
 MIT © Query Farm LLC. The bundled `.evtx` parser (`evtx` crate) is MIT/Apache-2.0.
+
+---
+
+## Authorship & License
+
+Written by [Query.Farm](https://query.farm) — every VGI worker is designed and built by Query.Farm.
+
+Copyright 2026 Query Farm LLC - https://query.farm
+
