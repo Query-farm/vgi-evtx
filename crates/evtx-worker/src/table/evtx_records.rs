@@ -24,6 +24,27 @@ use vgi_rpc::{OutputCollector, Result, RpcError};
 use crate::arrow_io::const_input_bytes;
 use crate::evtx_parse::{self, EvtxRow};
 
+/// Guaranteed-runnable, catalog-qualified examples (VGI509). Each `sql` is
+/// self-contained and re-runnable against an attached `evtx` worker WITHOUT any
+/// external `.evtx` file: the version helper needs no input, and the inspection
+/// scalars over non-evtx bytes exercise the hardened "hostile input" path
+/// (count 0 / not valid) so they execute cleanly everywhere. We omit
+/// `expected_result` — the linter only needs each query to execute.
+const EXECUTABLE_EXAMPLES: &str = r#"[
+  {
+    "description": "Report the running evtx worker version.",
+    "sql": "SELECT evtx.main.evtx_version() AS version"
+  },
+  {
+    "description": "Non-evtx bytes are reported as not valid (false), never an error.",
+    "sql": "SELECT evtx.main.is_valid_evtx('not a real evtx'::BLOB) AS valid"
+  },
+  {
+    "description": "Non-evtx bytes count as zero event records (hostile input is handled).",
+    "sql": "SELECT evtx.main.evtx_record_count('not a real evtx'::BLOB) AS records"
+  }
+]"#;
+
 /// `evtx_records` is registered twice — once with a BLOB-typed input arg and
 /// once with a VARCHAR-typed (path) input arg — so DuckDB's binder accepts both
 /// `evtx_records(<blob>)` and `evtx_records('path')` (it does not implicitly cast
@@ -77,27 +98,46 @@ impl TableFunction for EvtxRecords {
                 .into(),
             examples: vec![FunctionExample {
                 sql: "SELECT record_id, event_id, provider, time_created \
-                      FROM evtx.main.evtx_records('Security.evtx') ORDER BY record_id;"
+                      FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') \
+                      ORDER BY record_id;"
                     .into(),
                 description: "Explode a .evtx file at the given path into one row per event \
                               record, ordered by record id."
                     .into(),
                 expected_output: None,
             }],
-            tags: vec![(
-                "vgi.columns_md".into(),
-                "| column | type | description |\n\
-                 |---|---|---|\n\
-                 | `record_id` | BIGINT | The event record's identifier (file order). |\n\
-                 | `event_id` | INTEGER | The Windows Event ID from `Event.System.EventID`. |\n\
-                 | `provider` | VARCHAR | Event provider name (`Event.System.Provider/@Name`). |\n\
-                 | `channel` | VARCHAR | Log channel, e.g. `Security`, `System`. |\n\
-                 | `computer` | VARCHAR | Source computer name (`Event.System.Computer`). |\n\
-                 | `level` | INTEGER | Severity level from `Event.System.Level`. |\n\
-                 | `time_created` | TIMESTAMP | Record header timestamp (UTC, microsecond). |\n\
-                 | `event_json` | VARCHAR | Full normalized event JSON; feeds `sigma_match`. |"
-                    .into(),
-            )],
+            tags: {
+                let mut tags = crate::meta::object_tags(
+                    "Explode EVTX File into Event Rows",
+                    "Parse a Windows Event Log (.evtx) file into one row per event record. Input \
+                     is a bind-time constant: either inline BLOB bytes or a VARCHAR path to the \
+                     file. Each row exposes record_id, event_id, provider, channel, computer, \
+                     level, time_created (UTC TIMESTAMP), and event_json — the full normalized \
+                     event JSON that composes with vgi-sigma's sigma_match(event_json, rule). A \
+                     NULL, missing, malformed, or garbage input yields zero rows, never an error.",
+                    "Explode a `.evtx` file (BLOB or path) into one row per event record, with the \
+                     full `event_json` preserved for detection.",
+                    "evtx records, parse evtx, windows event log, explode events, one row per event, \
+                     evtx_records, event_json, sigma, dfir, forensics, event id, provider, channel",
+                    "table/evtx_records.rs",
+                );
+                tags.push((
+                    "vgi.columns_md".into(),
+                    "| column | type | description |\n\
+                     |---|---|---|\n\
+                     | `record_id` | BIGINT | The event record's identifier (file order). |\n\
+                     | `event_id` | INTEGER | The Windows Event ID from `Event.System.EventID`. |\n\
+                     | `provider` | VARCHAR | Event provider name (`Event.System.Provider/@Name`). |\n\
+                     | `channel` | VARCHAR | Log channel, e.g. `Security`, `System`. |\n\
+                     | `computer` | VARCHAR | Source computer name (`Event.System.Computer`). |\n\
+                     | `level` | INTEGER | Severity level from `Event.System.Level`. |\n\
+                     | `time_created` | TIMESTAMP | Record header timestamp (UTC, microsecond). |\n\
+                     | `event_json` | VARCHAR | Full normalized event JSON; feeds `sigma_match`. |"
+                        .into(),
+                ));
+                tags.push(("vgi.executable_examples".into(), EXECUTABLE_EXAMPLES.into()));
+                tags
+            },
             ..Default::default()
         }
     }

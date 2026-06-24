@@ -29,6 +29,7 @@
 
 mod arrow_io;
 mod evtx_parse;
+mod meta;
 mod scalar;
 mod table;
 
@@ -53,6 +54,17 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                 .to_string(),
         ),
         tags: vec![
+            (
+                "vgi.title".to_string(),
+                "Windows Event Log (.evtx) Parsing for DFIR".to_string(),
+            ),
+            (
+                "vgi.keywords".to_string(),
+                "evtx, windows event log, event log, dfir, forensics, incident response, \
+                 security log, eventlog, elffile, windows logs, log parsing, sigma, detection, \
+                 event id, provider, channel"
+                    .to_string(),
+            ),
             (
                 "vgi.description_llm".to_string(),
                 "Parse Windows Event Log (.evtx) files into SQL rows for digital-forensics and \
@@ -95,6 +107,33 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                 "Windows Event Log (.evtx) parsing and inspection functions.".to_string(),
             ),
             tags: vec![
+                ("vgi.title".to_string(), "evtx — main".to_string()),
+                (
+                    "vgi.keywords".to_string(),
+                    "evtx, windows event log, event log, evtx_records, evtx_record_count, \
+                     is_valid_evtx, dfir, forensics, incident response, sigma, event id, \
+                     provider, channel, log parsing"
+                        .to_string(),
+                ),
+                // VGI123 classifying tags (bare keys: domain/category/topic) for faceting.
+                ("domain".to_string(), "security".to_string()),
+                ("category".to_string(), "parsing".to_string()),
+                ("topic".to_string(), "windows-event-log".to_string()),
+                (
+                    "vgi.source_url".to_string(),
+                    "https://github.com/Query-farm/vgi-evtx/blob/main/crates/evtx-worker/src/main.rs"
+                        .to_string(),
+                ),
+                // VGI506 representative example queries for the schema (display).
+                (
+                    "vgi.example_queries".to_string(),
+                    "SELECT evtx.main.evtx_version();\n\
+                     SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));\n\
+                     SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('Security.evtx')));\n\
+                     SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records('Security.evtx') ORDER BY record_id;\n\
+                     SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('Security.evtx') GROUP BY event_id ORDER BY n DESC;"
+                        .to_string(),
+                ),
                 (
                     "vgi.description_llm".to_string(),
                     "Windows Event Log (.evtx) parsing and inspection functions: count event \
