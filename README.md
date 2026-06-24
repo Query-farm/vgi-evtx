@@ -4,7 +4,9 @@
 
 <p align="center"><em>A <a href="https://query.farm">Query.Farm</a> VGI worker for DuckDB.</em></p>
 
-# vgi-evtx
+# Parse Windows Event Logs (.evtx) into Rows in DuckDB
+
+> **vgi-evtx** · a [Query.Farm](https://query.farm) VGI worker
 
 A [VGI](https://query.farm) worker (Rust, a compiled binary) that parses
 **Windows Event Log (`.evtx`) files** into rows for DuckDB / SQL over Apache
