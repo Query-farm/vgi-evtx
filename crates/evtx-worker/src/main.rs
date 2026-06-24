@@ -66,7 +66,7 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                     .to_string(),
             ),
             (
-                "vgi.description_llm".to_string(),
+                "vgi.doc_llm".to_string(),
                 "Parse Windows Event Log (.evtx) files into SQL rows for digital-forensics and \
                  incident-response (DFIR) work. Accepts a .evtx file as inline BLOB bytes or a \
                  VARCHAR path. Use to count records in a log, test whether bytes are a valid \
@@ -78,11 +78,17 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                     .to_string(),
             ),
             (
-                "vgi.description_md".to_string(),
+                "vgi.doc_md".to_string(),
                 "# evtx\n\nWindows Event Log (`.evtx`) parsing for defensive DFIR over Apache \
-                 Arrow.\n\nScalars: `evtx_record_count`, `is_valid_evtx`, `evtx_version`. Table: \
-                 `evtx_records`. Input is a `.evtx` file as a BLOB or a VARCHAR path; \
-                 `evtx_records(...).event_json` feeds `vgi-sigma`'s `sigma_match`."
+                 Arrow.\n\n## Overview\n\nThis worker turns binary `.evtx` event-log files — \
+                 including ones recovered from potentially compromised hosts — into queryable SQL \
+                 rows. Parsing happens entirely offline; the worker never touches the network.\n\n\
+                 ## Surface\n\n- Scalars: `evtx_record_count`, `is_valid_evtx`, `evtx_version`.\n\
+                 - Table: `evtx_records`.\n\n## Usage\n\nInput is a `.evtx` file supplied as a \
+                 BLOB or as a VARCHAR path. The `event_json` column emitted by `evtx_records(...)` \
+                 feeds `vgi-sigma`'s `sigma_match(event_json, rule)` for detection-rule matching.\n\n\
+                 ## Notes\n\nEvery entry point is hardened against hostile input: malformed, \
+                 truncated, or garbage files yield NULL / false / no rows and never crash."
                     .to_string(),
             ),
             ("vgi.author".to_string(), "Query.Farm".to_string()),
@@ -135,17 +141,21 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                         .to_string(),
                 ),
                 (
-                    "vgi.description_llm".to_string(),
+                    "vgi.doc_llm".to_string(),
                     "Windows Event Log (.evtx) parsing and inspection functions: count event \
                      records, validate that bytes are a parseable .evtx, and explode a .evtx \
                      file into one row per event record with the full event JSON preserved for \
-                     downstream detection."
+                     downstream detection. All functions accept the file as inline BLOB bytes or \
+                     a VARCHAR path and tolerate hostile input without erroring."
                         .to_string(),
                 ),
                 (
-                    "vgi.description_md".to_string(),
-                    "Windows Event Log (`.evtx`) parsing and inspection functions over Apache \
-                     Arrow."
+                    "vgi.doc_md".to_string(),
+                    "## evtx.main\n\nWindows Event Log (`.evtx`) parsing and inspection functions \
+                     over Apache Arrow.\n\n- `evtx_records(input)` — one row per event record.\n\
+                     - `evtx_record_count(input)` — number of records.\n- `is_valid_evtx(input)` \
+                     — whether bytes parse as `.evtx`.\n- `evtx_version()` — worker version.\n\n\
+                     Input is a `.evtx` BLOB or a VARCHAR path."
                         .to_string(),
                 ),
             ],

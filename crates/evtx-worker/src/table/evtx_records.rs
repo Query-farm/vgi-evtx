@@ -122,7 +122,7 @@ impl TableFunction for EvtxRecords {
                     "table/evtx_records.rs",
                 );
                 tags.push((
-                    "vgi.columns_md".into(),
+                    "vgi.result_columns_md".into(),
                     "| column | type | description |\n\
                      |---|---|---|\n\
                      | `record_id` | BIGINT | The event record's identifier (file order). |\n\
