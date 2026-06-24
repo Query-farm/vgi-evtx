@@ -9,7 +9,10 @@ use std::sync::Arc;
 use arrow_array::builder::{BooleanBuilder, Int64Builder};
 use arrow_array::{ArrayRef, RecordBatch};
 use arrow_schema::DataType;
-use vgi::{ArgSpec, BindParams, BindResponse, FunctionMetadata, ProcessParams, ScalarFunction};
+use vgi::{
+    ArgSpec, BindParams, BindResponse, FunctionExample, FunctionMetadata, ProcessParams,
+    ScalarFunction,
+};
 use vgi_rpc::{Result, RpcError};
 
 use crate::arrow_io::input_bytes;
@@ -32,6 +35,13 @@ impl ScalarFunction for EvtxRecordCount {
                           0 for malformed/garbage input"
                 .into(),
             return_type: Some(DataType::Int64),
+            examples: vec![FunctionExample {
+                sql: "SELECT evtx.main.evtx_record_count((SELECT content FROM \
+                      read_blob('Security.evtx')));"
+                    .into(),
+                description: "Count the event records in a .evtx file read as a BLOB.".into(),
+                expected_output: None,
+            }],
             ..Default::default()
         }
     }
@@ -81,6 +91,14 @@ impl ScalarFunction for IsValidEvtx {
                           parser constructs); false for malformed/garbage input"
                 .into(),
             return_type: Some(DataType::Boolean),
+            examples: vec![FunctionExample {
+                sql: "SELECT evtx.main.is_valid_evtx((SELECT content FROM \
+                      read_blob('Security.evtx')));"
+                    .into(),
+                description:
+                    "Check whether a file's bytes are a parseable .evtx before processing.".into(),
+                expected_output: None,
+            }],
             ..Default::default()
         }
     }

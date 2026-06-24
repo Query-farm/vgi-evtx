@@ -132,3 +132,31 @@ jobs:
         run: ci/run-integration.sh
         env:
           TRANSPORT: ${{ matrix.transport }}
+
+  metadata-quality:
+    # Gate the worker's catalog/function metadata on the vgi-lint metadata-quality
+    # linter (`--fail-on info` = 0 findings). Kept as a separate job so its result
+    # is visible at a glance. Mirrors the integration job's release build, then
+    # points the linter at the compiled binary (the same LOCATION form DuckDB and
+    # the local `vgi-lint lint <bin>` invocation use).
+    name: metadata-quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Build worker (release)
+        run: cargo build --release --bin evtx-worker
+
+      - name: vgi-lint
+        uses: Query-farm/vgi-lint-check@v1
+        with:
+          location: "${{ github.workspace }}/target/release/evtx-worker"
+          fail-on: info

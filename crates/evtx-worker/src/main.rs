@@ -32,11 +32,90 @@ mod evtx_parse;
 mod scalar;
 mod table;
 
+use vgi::catalog::{CatSchema, CatalogModel};
 use vgi::Worker;
 
 /// Worker version string, surfaced by `evtx_version()`.
 pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
+}
+
+/// Catalog + schema metadata (description, provenance) surfaced to DuckDB and
+/// the `vgi-lint` metadata-quality linter. The function objects themselves are
+/// served from the registered scalars/table; this only adds catalog/schema-level
+/// comments and tags.
+fn catalog_metadata(name: &str) -> CatalogModel {
+    CatalogModel {
+        name: name.to_string(),
+        comment: Some(
+            "Windows Event Log (.evtx) parsing for defensive DFIR — turn event-log files into \
+             queryable rows."
+                .to_string(),
+        ),
+        tags: vec![
+            (
+                "vgi.description_llm".to_string(),
+                "Parse Windows Event Log (.evtx) files into SQL rows for digital-forensics and \
+                 incident-response (DFIR) work. Accepts a .evtx file as inline BLOB bytes or a \
+                 VARCHAR path. Use to count records in a log, test whether bytes are a valid \
+                 .evtx, and explode a log into one row per event record (record_id, event_id, \
+                 provider, channel, computer, level, time_created, and the full event_json). The \
+                 preserved event_json composes with vgi-sigma's sigma_match(event_json, rule) for \
+                 detection. Hardened against hostile input: malformed/truncated/garbage files \
+                 yield NULL/false/no rows and never crash. Does not touch the network."
+                    .to_string(),
+            ),
+            (
+                "vgi.description_md".to_string(),
+                "# evtx\n\nWindows Event Log (`.evtx`) parsing for defensive DFIR over Apache \
+                 Arrow.\n\nScalars: `evtx_record_count`, `is_valid_evtx`, `evtx_version`. Table: \
+                 `evtx_records`. Input is a `.evtx` file as a BLOB or a VARCHAR path; \
+                 `evtx_records(...).event_json` feeds `vgi-sigma`'s `sigma_match`."
+                    .to_string(),
+            ),
+            ("vgi.author".to_string(), "Query.Farm".to_string()),
+            (
+                "vgi.copyright".to_string(),
+                "Copyright 2026 Query Farm LLC - https://query.farm".to_string(),
+            ),
+            ("vgi.license".to_string(), "MIT".to_string()),
+            (
+                "vgi.support_contact".to_string(),
+                "https://github.com/Query-farm/vgi-evtx/issues".to_string(),
+            ),
+            (
+                "vgi.support_policy_url".to_string(),
+                "https://github.com/Query-farm/vgi-evtx/blob/main/README.md".to_string(),
+            ),
+        ],
+        source_url: Some("https://github.com/Query-farm/vgi-evtx".to_string()),
+        schemas: vec![CatSchema {
+            name: "main".to_string(),
+            comment: Some(
+                "Windows Event Log (.evtx) parsing and inspection functions.".to_string(),
+            ),
+            tags: vec![
+                (
+                    "vgi.description_llm".to_string(),
+                    "Windows Event Log (.evtx) parsing and inspection functions: count event \
+                     records, validate that bytes are a parseable .evtx, and explode a .evtx \
+                     file into one row per event record with the full event JSON preserved for \
+                     downstream detection."
+                        .to_string(),
+                ),
+                (
+                    "vgi.description_md".to_string(),
+                    "Windows Event Log (`.evtx`) parsing and inspection functions over Apache \
+                     Arrow."
+                        .to_string(),
+                ),
+            ],
+            views: Vec::new(),
+            macros: Vec::new(),
+            tables: Vec::new(),
+        }],
+        ..Default::default()
+    }
 }
 
 fn main() {
@@ -50,9 +129,12 @@ fn main() {
     if std::env::var_os("VGI_WORKER_CATALOG_NAME").is_none() {
         std::env::set_var("VGI_WORKER_CATALOG_NAME", "evtx");
     }
+    let catalog_name =
+        std::env::var("VGI_WORKER_CATALOG_NAME").unwrap_or_else(|_| "evtx".to_string());
 
     let mut worker = Worker::new();
     scalar::register(&mut worker);
     table::register(&mut worker);
+    worker.set_catalog(catalog_metadata(&catalog_name));
     worker.run();
 }

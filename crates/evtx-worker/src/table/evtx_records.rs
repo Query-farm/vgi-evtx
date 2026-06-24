@@ -18,7 +18,7 @@ use arrow_array::builder::{
 use arrow_array::{ArrayRef, RecordBatch};
 use arrow_schema::{DataType, Field, Schema, SchemaRef, TimeUnit};
 use vgi::table_function::{TableFunction, TableProducer};
-use vgi::{ArgSpec, BindParams, BindResponse, FunctionMetadata, ProcessParams};
+use vgi::{ArgSpec, BindParams, BindResponse, FunctionExample, FunctionMetadata, ProcessParams};
 use vgi_rpc::{OutputCollector, Result, RpcError};
 
 use crate::arrow_io::const_input_bytes;
@@ -75,6 +75,29 @@ impl TableFunction for EvtxRecords {
             description: "Parse a .evtx file (BLOB bytes or VARCHAR path) into one row per event \
                           record; event_json carries the full normalized event JSON"
                 .into(),
+            examples: vec![FunctionExample {
+                sql: "SELECT record_id, event_id, provider, time_created \
+                      FROM evtx.main.evtx_records('Security.evtx') ORDER BY record_id;"
+                    .into(),
+                description: "Explode a .evtx file at the given path into one row per event \
+                              record, ordered by record id."
+                    .into(),
+                expected_output: None,
+            }],
+            tags: vec![(
+                "vgi.columns_md".into(),
+                "| column | type | description |\n\
+                 |---|---|---|\n\
+                 | `record_id` | BIGINT | The event record's identifier (file order). |\n\
+                 | `event_id` | INTEGER | The Windows Event ID from `Event.System.EventID`. |\n\
+                 | `provider` | VARCHAR | Event provider name (`Event.System.Provider/@Name`). |\n\
+                 | `channel` | VARCHAR | Log channel, e.g. `Security`, `System`. |\n\
+                 | `computer` | VARCHAR | Source computer name (`Event.System.Computer`). |\n\
+                 | `level` | INTEGER | Severity level from `Event.System.Level`. |\n\
+                 | `time_created` | TIMESTAMP | Record header timestamp (UTC, microsecond). |\n\
+                 | `event_json` | VARCHAR | Full normalized event JSON; feeds `sigma_match`. |"
+                    .into(),
+            )],
             ..Default::default()
         }
     }
