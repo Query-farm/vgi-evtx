@@ -60,10 +60,25 @@ fn catalog_metadata(name: &str) -> CatalogModel {
             ),
             (
                 "vgi.keywords".to_string(),
-                "evtx, windows event log, event log, dfir, forensics, incident response, \
-                 security log, eventlog, elffile, windows logs, log parsing, sigma, detection, \
-                 event id, provider, channel"
-                    .to_string(),
+                serde_json::to_string(&[
+                    "evtx",
+                    "windows event log",
+                    "event log",
+                    "dfir",
+                    "forensics",
+                    "incident response",
+                    "security log",
+                    "eventlog",
+                    "elffile",
+                    "windows logs",
+                    "log parsing",
+                    "sigma",
+                    "detection",
+                    "event id",
+                    "provider",
+                    "channel",
+                ])
+                .expect("keywords serialize to JSON"),
             ),
             (
                 "vgi.doc_llm".to_string(),
@@ -116,20 +131,28 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                 ("vgi.title".to_string(), "evtx — main".to_string()),
                 (
                     "vgi.keywords".to_string(),
-                    "evtx, windows event log, event log, evtx_records, evtx_record_count, \
-                     is_valid_evtx, dfir, forensics, incident response, sigma, event id, \
-                     provider, channel, log parsing"
-                        .to_string(),
+                    serde_json::to_string(&[
+                        "evtx",
+                        "windows event log",
+                        "event log",
+                        "evtx_records",
+                        "evtx_record_count",
+                        "is_valid_evtx",
+                        "dfir",
+                        "forensics",
+                        "incident response",
+                        "sigma",
+                        "event id",
+                        "provider",
+                        "channel",
+                        "log parsing",
+                    ])
+                    .expect("keywords serialize to JSON"),
                 ),
                 // VGI123 classifying tags (bare keys: domain/category/topic) for faceting.
                 ("domain".to_string(), "security".to_string()),
                 ("category".to_string(), "parsing".to_string()),
                 ("topic".to_string(), "windows-event-log".to_string()),
-                (
-                    "vgi.source_url".to_string(),
-                    "https://github.com/Query-farm/vgi-evtx/blob/main/crates/evtx-worker/src/main.rs"
-                        .to_string(),
-                ),
                 // VGI506 representative example queries for the schema (display).
                 (
                     "vgi.example_queries".to_string(),

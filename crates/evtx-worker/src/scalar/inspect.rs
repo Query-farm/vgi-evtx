@@ -59,9 +59,15 @@ impl ScalarFunction for EvtxRecordCount {
                  non-evtx input and NULL for NULL input; it never raises on hostile bytes.",
                 "Count event records in a `.evtx` file (BLOB or path). Returns `0` for \
                  malformed/garbage input.",
-                "evtx record count, count events, number of records, event log size, evtx_record_count, \
-                 windows event log, dfir",
-                "scalar/inspect.rs",
+                &[
+                    "evtx record count",
+                    "count events",
+                    "number of records",
+                    "event log size",
+                    "evtx_record_count",
+                    "windows event log",
+                    "dfir",
+                ],
             ),
             ..Default::default()
         }
@@ -71,7 +77,8 @@ impl ScalarFunction for EvtxRecordCount {
         vec![ArgSpec::any_column(
             "input",
             0,
-            ".evtx file BLOB or VARCHAR path",
+            "The Windows Event Log (.evtx) to inspect: either the raw file contents \
+             supplied inline, or a filesystem path to the .evtx file to open and read.",
         )]
     }
 
@@ -138,9 +145,16 @@ impl ScalarFunction for IsValidEvtx {
                  evtx_records.",
                 "Test whether bytes are a parseable `.evtx` file. Returns `false` for \
                  malformed/garbage input.",
-                "validate evtx, is valid evtx, check evtx, parseable, elffile magic, is_valid_evtx, \
-                 windows event log, dfir",
-                "scalar/inspect.rs",
+                &[
+                    "validate evtx",
+                    "is valid evtx",
+                    "check evtx",
+                    "parseable",
+                    "elffile magic",
+                    "is_valid_evtx",
+                    "windows event log",
+                    "dfir",
+                ],
             ),
             ..Default::default()
         }
@@ -150,7 +164,8 @@ impl ScalarFunction for IsValidEvtx {
         vec![ArgSpec::any_column(
             "input",
             0,
-            ".evtx file BLOB or VARCHAR path",
+            "The Windows Event Log (.evtx) to inspect: either the raw file contents \
+             supplied inline, or a filesystem path to the .evtx file to open and read.",
         )]
     }
 

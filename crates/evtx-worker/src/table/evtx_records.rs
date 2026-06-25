@@ -117,9 +117,21 @@ impl TableFunction for EvtxRecords {
                      NULL, missing, malformed, or garbage input yields zero rows, never an error.",
                     "Explode a `.evtx` file (BLOB or path) into one row per event record, with the \
                      full `event_json` preserved for detection.",
-                    "evtx records, parse evtx, windows event log, explode events, one row per event, \
-                     evtx_records, event_json, sigma, dfir, forensics, event id, provider, channel",
-                    "table/evtx_records.rs",
+                    &[
+                        "evtx records",
+                        "parse evtx",
+                        "windows event log",
+                        "explode events",
+                        "one row per event",
+                        "evtx_records",
+                        "event_json",
+                        "sigma",
+                        "dfir",
+                        "forensics",
+                        "event id",
+                        "provider",
+                        "channel",
+                    ],
                 );
                 tags.push((
                     "vgi.result_columns_md".into(),
@@ -149,7 +161,9 @@ impl TableFunction for EvtxRecords {
             "input",
             0,
             self.input_type,
-            ".evtx file bytes (BLOB) or a path to a .evtx file (VARCHAR)",
+            "The Windows Event Log (.evtx) to explode into rows: either the raw file \
+             contents supplied inline, or a filesystem path to the .evtx file to open \
+             and read.",
         )]
     }
 
