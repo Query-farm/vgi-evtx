@@ -94,16 +94,42 @@ fn catalog_metadata(name: &str) -> CatalogModel {
             ),
             (
                 "vgi.doc_md".to_string(),
-                "# evtx\n\nWindows Event Log (`.evtx`) parsing for defensive DFIR over Apache \
-                 Arrow.\n\n## Overview\n\nThis worker turns binary `.evtx` event-log files — \
-                 including ones recovered from potentially compromised hosts — into queryable SQL \
-                 rows. Parsing happens entirely offline; the worker never touches the network.\n\n\
-                 ## Surface\n\n- Scalars: `evtx_record_count`, `is_valid_evtx`, `evtx_version`.\n\
-                 - Table: `evtx_records`.\n\n## Usage\n\nInput is a `.evtx` file supplied as a \
-                 BLOB or as a VARCHAR path. The `event_json` column emitted by `evtx_records(...)` \
-                 feeds `vgi-sigma`'s `sigma_match(event_json, rule)` for detection-rule matching.\n\n\
-                 ## Notes\n\nEvery entry point is hardened against hostile input: malformed, \
-                 truncated, or garbage files yield NULL / false / no rows and never crash."
+                "# Windows Event Log (.evtx) Parsing in SQL\n\n\
+                 Query Windows Event Logs directly in DuckDB: this VGI extension turns binary \
+                 `.evtx` files into Apache Arrow rows so you can run digital-forensics and \
+                 incident-response (DFIR) analysis, threat hunting, and log triage entirely in \
+                 SQL — no external tooling, no network access, no scripting.\n\n\
+                 ## What it does\n\n\
+                 The Windows Event Log (`.evtx`, the binary `ElfFile` format that backs the \
+                 Security, System, Application, PowerShell, and Sysmon channels) is the primary \
+                 evidence source for Windows DFIR. This extension reads those files — including \
+                 logs pulled from potentially compromised hosts — and exposes every event record \
+                 as a queryable row, with convenience columns for `record_id`, `event_id`, \
+                 `provider`, `channel`, `computer`, `level`, and `time_created`, plus the complete \
+                 original event preserved as `event_json`. It is built for incident responders, \
+                 threat hunters, detection engineers, SOC analysts, and anyone who would rather \
+                 join, filter, and aggregate event logs in SQL than wrangle them in a GUI.\n\n\
+                 ## How it works\n\n\
+                 Parsing is powered by the battle-tested [`evtx`](https://github.com/omerbenamram/evtx) \
+                 Rust crate (API docs on [docs.rs](https://docs.rs/evtx)), which decodes the \
+                 BinXML chunks of the \
+                 [Windows event-logging](https://learn.microsoft.com/en-us/windows/win32/eventlog/event-logging) \
+                 format. Everything runs offline inside the worker — it never touches the network \
+                 — and every entry point is hardened against hostile input: malformed, truncated, \
+                 or deliberately corrupted files yield `NULL` / `false` / no rows and never crash \
+                 the worker. Input may be supplied either inline as a `BLOB` (for example from \
+                 `read_blob()`) or as a `VARCHAR` filesystem path.\n\n\
+                 ## SQL use cases\n\n\
+                 Explode a log into rows with the `evtx_records(input)` table function, then use \
+                 ordinary SQL to find anomalies — for example `SELECT event_id, count(*) FROM \
+                 evtx.main.evtx_records('Security.evtx') GROUP BY event_id ORDER BY 2 DESC` to \
+                 surface the noisiest event IDs, or filter on `provider` and `time_created` to \
+                 build a timeline. Use the scalar `evtx_record_count(input)` to size a log before \
+                 loading it, `is_valid_evtx(input)` to verify that a byte stream really is a \
+                 parseable `.evtx`, and `evtx_version()` to report the worker version. The \
+                 preserved `event_json` column composes with the companion `vgi-sigma` worker's \
+                 `sigma_match(event_json, rule)` to run Sigma detection rules straight against \
+                 your event logs in SQL."
                     .to_string(),
             ),
             ("vgi.author".to_string(), "Query.Farm".to_string()),
