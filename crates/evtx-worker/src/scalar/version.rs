@@ -31,6 +31,7 @@ impl ScalarFunction for EvtxVersion {
                 "Return the semantic version string of the running evtx worker binary. Useful for \
                  diagnostics and confirming which build is attached.",
                 "Return the evtx worker version string, e.g. `evtx_version()` -> '0.1.0'.",
+                "Inspection & Diagnostics",
                 &[
                     "version",
                     "build version",

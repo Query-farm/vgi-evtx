@@ -117,6 +117,7 @@ impl TableFunction for EvtxRecords {
                      NULL, missing, malformed, or garbage input yields zero rows, never an error.",
                     "Explode a `.evtx` file (BLOB or path) into one row per event record, with the \
                      full `event_json` preserved for detection.",
+                    "Event Record Parsing",
                     &[
                         "evtx records",
                         "parse evtx",

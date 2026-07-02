@@ -59,6 +59,7 @@ impl ScalarFunction for EvtxRecordCount {
                  non-evtx input and NULL for NULL input; it never raises on hostile bytes.",
                 "Count event records in a `.evtx` file (BLOB or path). Returns `0` for \
                  malformed/garbage input.",
+                "Inspection & Diagnostics",
                 &[
                     "evtx record count",
                     "count events",
@@ -145,6 +146,7 @@ impl ScalarFunction for IsValidEvtx {
                  evtx_records.",
                 "Test whether bytes are a parseable `.evtx` file. Returns `false` for \
                  malformed/garbage input.",
+                "Inspection & Diagnostics",
                 &[
                     "validate evtx",
                     "is valid evtx",

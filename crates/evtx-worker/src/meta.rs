@@ -16,20 +16,24 @@ fn keywords_json(keywords: &[&str]) -> String {
     serde_json::to_string(keywords).expect("keyword list serializes to JSON")
 }
 
-/// Build the four standard per-object discovery/description tags.
+/// Build the standard per-object discovery/description tags.
 ///
-/// `keywords` is a list of search terms/synonyms; it is serialized as a JSON
-/// array for the `vgi.keywords` tag.
+/// `category` names one of the schema's `vgi.categories` (VGI413); every object
+/// must declare which navigation category it belongs to. `keywords` is a list of
+/// search terms/synonyms; it is serialized as a JSON array for the
+/// `vgi.keywords` tag.
 pub fn object_tags(
     title: &str,
     doc_llm: &str,
     doc_md: &str,
+    category: &str,
     keywords: &[&str],
 ) -> Vec<(String, String)> {
     vec![
         ("vgi.title".to_string(), title.to_string()),
         ("vgi.doc_llm".to_string(), doc_llm.to_string()),
         ("vgi.doc_md".to_string(), doc_md.to_string()),
+        ("vgi.category".to_string(), category.to_string()),
         ("vgi.keywords".to_string(), keywords_json(keywords)),
     ]
 }

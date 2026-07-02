@@ -104,11 +104,11 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                  Security, System, Application, PowerShell, and Sysmon channels) is the primary \
                  evidence source for Windows DFIR. This extension reads those files — including \
                  logs pulled from potentially compromised hosts — and exposes every event record \
-                 as a queryable row, with convenience columns for `record_id`, `event_id`, \
-                 `provider`, `channel`, `computer`, `level`, and `time_created`, plus the complete \
-                 original event preserved as `event_json`. It is built for incident responders, \
-                 threat hunters, detection engineers, SOC analysts, and anyone who would rather \
-                 join, filter, and aggregate event logs in SQL than wrangle them in a GUI.\n\n\
+                 as a queryable row, with convenience columns for the event id, provider, channel, \
+                 source computer, severity level, and creation time, plus the complete original \
+                 event preserved as JSON. It is built for incident responders, threat hunters, \
+                 detection engineers, SOC analysts, and anyone who would rather join, filter, and \
+                 aggregate event logs in SQL than wrangle them in a GUI.\n\n\
                  ## How it works\n\n\
                  Parsing is powered by the battle-tested [`evtx`](https://github.com/omerbenamram/evtx) \
                  Rust crate (API docs on [docs.rs](https://docs.rs/evtx)), which decodes the \
@@ -119,17 +119,19 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                  or deliberately corrupted files yield `NULL` / `false` / no rows and never crash \
                  the worker. Input may be supplied either inline as a `BLOB` (for example from \
                  `read_blob()`) or as a `VARCHAR` filesystem path.\n\n\
-                 ## SQL use cases\n\n\
-                 Explode a log into rows with the `evtx_records(input)` table function, then use \
-                 ordinary SQL to find anomalies — for example `SELECT event_id, count(*) FROM \
-                 evtx.main.evtx_records('Security.evtx') GROUP BY event_id ORDER BY 2 DESC` to \
-                 surface the noisiest event IDs, or filter on `provider` and `time_created` to \
-                 build a timeline. Use the scalar `evtx_record_count(input)` to size a log before \
-                 loading it, `is_valid_evtx(input)` to verify that a byte stream really is a \
-                 parseable `.evtx`, and `evtx_version()` to report the worker version. The \
-                 preserved `event_json` column composes with the companion `vgi-sigma` worker's \
-                 `sigma_match(event_json, rule)` to run Sigma detection rules straight against \
-                 your event logs in SQL."
+                 ## Working in SQL\n\n\
+                 Because every event becomes an ordinary row, you build timelines by filtering on \
+                 provider and creation time, surface the noisiest activity by grouping and \
+                 counting, and pivot from triage to detection: the preserved event JSON composes \
+                 with the companion `vgi-sigma` worker to run Sigma detection rules straight \
+                 against your logs. A typical triage query that surfaces the busiest event IDs \
+                 looks like:\n\n\
+                 ```sql\n\
+                 SELECT event_id, count(*) AS n\n\
+                 FROM evtx.main.evtx_records('Security.evtx')\n\
+                 GROUP BY event_id\n\
+                 ORDER BY n DESC;\n\
+                 ```"
                     .to_string(),
             ),
             ("vgi.author".to_string(), "Query.Farm".to_string()),
@@ -145,6 +147,71 @@ fn catalog_metadata(name: &str) -> CatalogModel {
             (
                 "vgi.support_policy_url".to_string(),
                 "https://github.com/Query-farm/vgi-evtx/blob/main/README.md".to_string(),
+            ),
+            // VGI152 / VGI920: an analyst-task suite so `vgi-lint simulate` can
+            // measure how well an agent actually uses this worker. Each task's
+            // reference_sql is self-contained and runs against the committed
+            // fixture (test/sql/data/sample-security.evtx, 7 records) or the
+            // hardened hostile-input path, so it executes without any external
+            // .evtx file.
+            (
+                "vgi.agent_test_tasks".to_string(),
+                serde_json::to_string(&[
+                    serde_json::json!({
+                        "name": "worker_version",
+                        "prompt": "Report the version string of the attached evtx worker.",
+                        "reference_sql": "SELECT evtx.main.evtx_version();",
+                        // Value-only compare: the analyst may alias the column.
+                        "ignore_column_names": true,
+                    }),
+                    serde_json::json!({
+                        "name": "validate_bad_bytes",
+                        "prompt": "Is the byte string 'this is not an event log' a valid, \
+                                   parseable Windows Event Log (.evtx)? Answer with the boolean \
+                                   the worker returns.",
+                        "reference_sql": "SELECT evtx.main.is_valid_evtx('this is not an event log'::BLOB);",
+                        "ignore_column_names": true,
+                    }),
+                    serde_json::json!({
+                        "name": "validate_file",
+                        "prompt": "Using the evtx worker, check whether the file at the path \
+                                   'test/sql/data/sample-security.evtx' is a valid, parseable \
+                                   Windows Event Log. Pass the path string to the validation \
+                                   function.",
+                        "reference_sql": "SELECT evtx.main.is_valid_evtx('test/sql/data/sample-security.evtx');",
+                        "ignore_column_names": true,
+                    }),
+                    serde_json::json!({
+                        "name": "count_records",
+                        "prompt": "Using the evtx worker, count how many event records are in the \
+                                   Windows Event Log file at the path \
+                                   'test/sql/data/sample-security.evtx'. Pass the path string to \
+                                   the record-count function.",
+                        "reference_sql": "SELECT evtx.main.evtx_record_count('test/sql/data/sample-security.evtx');",
+                        "ignore_column_names": true,
+                    }),
+                    serde_json::json!({
+                        "name": "top_event_ids",
+                        "prompt": "Parse the event log at the path \
+                                   'test/sql/data/sample-security.evtx' with the evtx worker and \
+                                   list each distinct event id together with how many records \
+                                   have that id.",
+                        "reference_sql": "SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') GROUP BY event_id;",
+                        // Set-of-rows compare: any row order and any column aliases pass.
+                        "unordered": true,
+                        "ignore_column_names": true,
+                    }),
+                    serde_json::json!({
+                        "name": "distinct_providers",
+                        "prompt": "Parse the event log at the path \
+                                   'test/sql/data/sample-security.evtx' with the evtx worker and \
+                                   list the distinct event provider names that appear in it.",
+                        "reference_sql": "SELECT DISTINCT provider FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx');",
+                        "unordered": true,
+                        "ignore_column_names": true,
+                    }),
+                ])
+                .expect("agent test tasks serialize to JSON"),
             ),
         ],
         source_url: Some("https://github.com/Query-farm/vgi-evtx".to_string()),
@@ -200,12 +267,37 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                 ),
                 (
                     "vgi.doc_md".to_string(),
-                    "## evtx.main\n\nWindows Event Log (`.evtx`) parsing and inspection functions \
-                     over Apache Arrow.\n\n- `evtx_records(input)` — one row per event record.\n\
-                     - `evtx_record_count(input)` — number of records.\n- `is_valid_evtx(input)` \
-                     — whether bytes parse as `.evtx`.\n- `evtx_version()` — worker version.\n\n\
-                     Input is a `.evtx` BLOB or a VARCHAR path."
+                    "## evtx.main\n\nWindows Event Log (`.evtx`) parsing and inspection over Apache \
+                     Arrow. This schema turns a `.evtx` file — supplied as inline `BLOB` bytes or a \
+                     `VARCHAR` filesystem path — into queryable event rows so a whole log can be \
+                     joined, filtered, and aggregated in SQL.\n\n\
+                     Alongside parsing, it lets you validate and size a log before loading it, and \
+                     each event's full JSON is preserved so results compose with downstream \
+                     detection tooling such as `vgi-sigma`.\n\n\
+                     Everything runs offline. All entry points tolerate hostile input — malformed, \
+                     truncated, or non-evtx data yields empty or false results rather than an \
+                     error — because event logs are routinely pulled from potentially compromised \
+                     hosts."
                         .to_string(),
+                ),
+                // VGI413 category registry: an ordered list of the navigation
+                // categories that every object in this schema tags itself with
+                // via `vgi.category`.
+                (
+                    "vgi.categories".to_string(),
+                    serde_json::to_string(&[
+                        serde_json::json!({
+                            "name": "Event Record Parsing",
+                            "description": "Explode a .evtx file into one queryable row per event \
+                                            record, preserving the full event JSON.",
+                        }),
+                        serde_json::json!({
+                            "name": "Inspection & Diagnostics",
+                            "description": "Validate and size .evtx files before loading them, and \
+                                            report the worker version.",
+                        }),
+                    ])
+                    .expect("categories serialize to JSON"),
                 ),
             ],
             views: Vec::new(),
