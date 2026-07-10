@@ -45,6 +45,22 @@ const EXECUTABLE_EXAMPLES: &str = r#"[
   }
 ]"#;
 
+/// Static result-schema declaration (VGI307/VGI414): the structured replacement
+/// for the retired `vgi.result_columns_md` Markdown table. One entry per returned
+/// column, in emission order; `type` is the DuckDB type DuckDB reports for the
+/// column so it matches what the function actually returns under `--execute`
+/// (VGI910). Kept adjacent to `output_schema()` so the two cannot drift.
+const RESULT_COLUMNS_SCHEMA: &str = r#"[
+  {"name": "record_id", "type": "BIGINT", "description": "The event record's identifier, assigned in file order."},
+  {"name": "event_id", "type": "INTEGER", "description": "The Windows Event ID from Event.System.EventID (e.g. 4624 = successful logon)."},
+  {"name": "provider", "type": "VARCHAR", "description": "Event provider name from Event.System.Provider/@Name (e.g. Microsoft-Windows-Security-Auditing)."},
+  {"name": "channel", "type": "VARCHAR", "description": "Log channel the record came from, e.g. Security, System, Application."},
+  {"name": "computer", "type": "VARCHAR", "description": "Source computer name from Event.System.Computer."},
+  {"name": "level", "type": "INTEGER", "description": "Severity level from Event.System.Level (lower is more severe; 2 = Error, 3 = Warning, 4 = Information)."},
+  {"name": "time_created", "type": "TIMESTAMP", "description": "Record header creation time in UTC, microsecond precision."},
+  {"name": "event_json", "type": "VARCHAR", "description": "The full normalized event as JSON; feeds vgi-sigma's sigma_match(event_json, rule)."}
+]"#;
+
 /// `evtx_records` is registered twice — once with a BLOB-typed input arg and
 /// once with a VARCHAR-typed (path) input arg — so DuckDB's binder accepts both
 /// `evtx_records(<blob>)` and `evtx_records('path')` (it does not implicitly cast
@@ -134,20 +150,7 @@ impl TableFunction for EvtxRecords {
                         "channel",
                     ],
                 );
-                tags.push((
-                    "vgi.result_columns_md".into(),
-                    "| column | type | description |\n\
-                     |---|---|---|\n\
-                     | `record_id` | BIGINT | The event record's identifier (file order). |\n\
-                     | `event_id` | INTEGER | The Windows Event ID from `Event.System.EventID`. |\n\
-                     | `provider` | VARCHAR | Event provider name (`Event.System.Provider/@Name`). |\n\
-                     | `channel` | VARCHAR | Log channel, e.g. `Security`, `System`. |\n\
-                     | `computer` | VARCHAR | Source computer name (`Event.System.Computer`). |\n\
-                     | `level` | INTEGER | Severity level from `Event.System.Level`. |\n\
-                     | `time_created` | TIMESTAMP | Record header timestamp (UTC, microsecond). |\n\
-                     | `event_json` | VARCHAR | Full normalized event JSON; feeds `sigma_match`. |"
-                        .into(),
-                ));
+                tags.push(("vgi.result_columns_schema".into(), RESULT_COLUMNS_SCHEMA.into()));
                 tags.push(("vgi.executable_examples".into(), EXECUTABLE_EXAMPLES.into()));
                 tags
             },

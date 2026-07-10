@@ -33,8 +33,123 @@ mod meta;
 mod scalar;
 mod table;
 
-use vgi::catalog::{CatSchema, CatalogModel};
+use vgi::catalog::{CatSchema, CatView, CatalogModel};
 use vgi::Worker;
+
+/// SQL body of the `windows_event_id_reference` browsable view (VGI146): a
+/// curated, credential-free registry of well-known Windows Event IDs so an agent
+/// or analyst can browse meanings and join them onto parsed records without first
+/// having to guess a function's arguments. Values are literal — the view scans
+/// entirely in DuckDB and needs no `.evtx` input. Sources: Microsoft Security
+/// auditing, the System (Service Control Manager) log, Sysmon, and the
+/// PowerShell operational log.
+const EVENT_ID_REFERENCE_VIEW_SQL: &str = r#"SELECT * FROM (VALUES
+  (CAST(1102 AS INTEGER), 'Security', 'Audit log cleared', 'Anti-forensics signal: the Security event log was cleared.'),
+  (CAST(4624 AS INTEGER), 'Security', 'Successful logon', 'Baseline authentication event; the logon type distinguishes interactive, network, and remote-desktop sessions.'),
+  (CAST(4625 AS INTEGER), 'Security', 'Failed logon', 'Failed authentication; bursts indicate password spraying or brute force.'),
+  (CAST(4634 AS INTEGER), 'Security', 'Logoff', 'Session teardown; pairs with 4624 to bound a session.'),
+  (CAST(4648 AS INTEGER), 'Security', 'Explicit-credential logon', 'A logon that supplied explicit credentials (runas); common in lateral movement.'),
+  (CAST(4672 AS INTEGER), 'Security', 'Special privileges assigned', 'Administrator-equivalent privileges granted at logon.'),
+  (CAST(4688 AS INTEGER), 'Security', 'Process creation', 'A new process started; the command line is the core hunting field when command-line auditing is on.'),
+  (CAST(4720 AS INTEGER), 'Security', 'User account created', 'A new local or domain account was created; watch for unexpected accounts.'),
+  (CAST(4726 AS INTEGER), 'Security', 'User account deleted', 'An account was removed; can mask attacker cleanup.'),
+  (CAST(4740 AS INTEGER), 'Security', 'Account locked out', 'Repeated bad passwords tripped the account lockout threshold.'),
+  (CAST(4768 AS INTEGER), 'Security', 'Kerberos TGT requested', 'A ticket-granting ticket was issued; the start of a Kerberos session.'),
+  (CAST(4769 AS INTEGER), 'Security', 'Kerberos service ticket requested', 'A service ticket was issued; anomalies underpin Kerberoasting detection.'),
+  (CAST(7045 AS INTEGER), 'System', 'Service installed', 'A new Windows service was installed; a classic persistence and lateral-movement technique.'),
+  (CAST(1 AS INTEGER), 'Microsoft-Windows-Sysmon/Operational', 'Sysmon process creation', 'Sysmon process-creation event with image hashes and parent lineage.'),
+  (CAST(3 AS INTEGER), 'Microsoft-Windows-Sysmon/Operational', 'Sysmon network connection', 'Sysmon network connection with process attribution.'),
+  (CAST(11 AS INTEGER), 'Microsoft-Windows-Sysmon/Operational', 'Sysmon file created', 'Sysmon file-creation event; useful for dropper and staging detection.'),
+  (CAST(13 AS INTEGER), 'Microsoft-Windows-Sysmon/Operational', 'Sysmon registry value set', 'Sysmon registry modification; underpins autorun and persistence hunts.'),
+  (CAST(4104 AS INTEGER), 'Microsoft-Windows-PowerShell/Operational', 'PowerShell script block', 'Script-block logging captures deobfuscated PowerShell; key for fileless-attack analysis.')
+) AS ref(event_id, channel, name, dfir_use)"#;
+
+/// Object-level example queries (VGI511) for the `windows_event_id_reference`
+/// view. Fully catalog-qualified and analytical (projected columns + filter),
+/// and they scan the literal registry so they run under `--execute` with no
+/// `.evtx` input.
+const EVENT_ID_REFERENCE_EXAMPLES: &str = r#"[
+  {
+    "description": "Look up the meaning and DFIR relevance of a single Windows event id.",
+    "sql": "SELECT name, dfir_use FROM evtx.main.windows_event_id_reference WHERE event_id = 4688"
+  },
+  {
+    "description": "List the curated Security-channel event ids in numeric order.",
+    "sql": "SELECT event_id, name FROM evtx.main.windows_event_id_reference WHERE channel = 'Security' ORDER BY event_id"
+  }
+]"#;
+
+/// Build the `windows_event_id_reference` view (VGI146 browsable entry point).
+fn event_id_reference_view() -> CatView {
+    let mut tags = meta::object_tags(
+        "Well-Known Windows Event ID Lookup for DFIR",
+        "A curated, browsable registry of well-known Windows Event IDs and what they mean for \
+         digital-forensics and incident-response work. Columns: event_id (INTEGER), channel \
+         (VARCHAR), name (short label), dfir_use (why it matters). Scan it to discover which \
+         event ids to look for, or LEFT JOIN it onto evtx_records.event_id to label parsed \
+         records with human-readable meanings. It is static reference data — no .evtx input and \
+         no network access.",
+        "## windows_event_id_reference\n\nA curated lookup of well-known Windows Event IDs \
+         (Security auditing, the System service-control log, Sysmon, and PowerShell script-block \
+         logging) with a short name and a DFIR relevance note for each. Browse it to learn which \
+         ids matter — for example 4624 (successful logon), 4625 (failed logon), 4688 (process \
+         creation), or 7045 (service installed) — or join it onto parsed records by `event_id` to \
+         turn a raw timeline into a readable one. It is static data: it needs no `.evtx` file and \
+         touches no network.",
+        "Reference Data",
+        &[
+            "event id reference",
+            "windows event id",
+            "event id lookup",
+            "4624",
+            "4625",
+            "4688",
+            "sysmon",
+            "security log",
+            "dfir",
+            "reference",
+        ],
+    );
+    // VGI123 classifying tags (bare keys) so the view is faceted like the schema.
+    tags.push(("domain".to_string(), "security".to_string()));
+    tags.push(("topic".to_string(), "windows-event-log".to_string()));
+    tags.push((
+        "vgi.example_queries".to_string(),
+        EVENT_ID_REFERENCE_EXAMPLES.to_string(),
+    ));
+    CatView {
+        name: "windows_event_id_reference".to_string(),
+        definition: EVENT_ID_REFERENCE_VIEW_SQL.to_string(),
+        comment: Some(
+            "Curated registry of well-known Windows Event IDs (Security, System, Sysmon, \
+             PowerShell) with a short name and DFIR relevance note; browsable and joinable onto \
+             evtx_records.event_id."
+                .to_string(),
+        ),
+        tags,
+        column_comments: vec![
+            (
+                "event_id".to_string(),
+                "The Windows Event ID (matches evtx_records.event_id).".to_string(),
+            ),
+            (
+                "channel".to_string(),
+                "The log channel the event id is emitted on, e.g. Security, System, or a Sysmon/\
+                 PowerShell operational channel."
+                    .to_string(),
+            ),
+            (
+                "name".to_string(),
+                "A short human-readable label for the event id.".to_string(),
+            ),
+            (
+                "dfir_use".to_string(),
+                "Why the event id matters in digital-forensics and incident-response analysis."
+                    .to_string(),
+            ),
+        ],
+    }
+}
 
 /// Worker version string, surfaced by `evtx_version()`.
 pub fn version() -> &'static str {
@@ -122,16 +237,13 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                  ## Working in SQL\n\n\
                  Because every event becomes an ordinary row, you build timelines by filtering on \
                  provider and creation time, surface the noisiest activity by grouping and \
-                 counting, and pivot from triage to detection: the preserved event JSON composes \
-                 with the companion `vgi-sigma` worker to run Sigma detection rules straight \
-                 against your logs. A typical triage query that surfaces the busiest event IDs \
-                 looks like:\n\n\
-                 ```sql\n\
-                 SELECT event_id, count(*) AS n\n\
-                 FROM evtx.main.evtx_records('Security.evtx')\n\
-                 GROUP BY event_id\n\
-                 ORDER BY n DESC;\n\
-                 ```"
+                 counting event ids, and pivot from triage to detection: the preserved event JSON \
+                 composes with the companion `vgi-sigma` worker to run Sigma detection rules \
+                 straight against your logs. The curated `windows_event_id_reference` view lets \
+                 you look up what a given event id means and join it onto parsed records for \
+                 readable timelines. Runnable, catalog-qualified queries for every function and \
+                 the reference view are attached to each object and to this schema as example \
+                 queries."
                     .to_string(),
             ),
             ("vgi.author".to_string(), "Query.Farm".to_string()),
@@ -208,6 +320,22 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                                    list the distinct event provider names that appear in it.",
                         "reference_sql": "SELECT DISTINCT provider FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx');",
                         "unordered": true,
+                        "ignore_column_names": true,
+                    }),
+                    serde_json::json!({
+                        "name": "event_id_reference_lookup",
+                        "prompt": "Using the evtx worker's built-in Windows Event ID reference \
+                                   data, what is the short name for event id 4688?",
+                        // Answerable purely from the browsable reference view — no
+                        // .evtx input needed. Deterministic string value.
+                        "reference_sql": "SELECT name FROM evtx.main.windows_event_id_reference WHERE event_id = 4688;",
+                        "ignore_column_names": true,
+                    }),
+                    serde_json::json!({
+                        "name": "security_reference_count",
+                        "prompt": "Using the evtx worker's Windows Event ID reference, how many \
+                                   distinct Security-channel event ids does it catalogue?",
+                        "reference_sql": "SELECT count(*) FROM evtx.main.windows_event_id_reference WHERE channel = 'Security';",
                         "ignore_column_names": true,
                     }),
                 ])
@@ -296,11 +424,17 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                             "description": "Validate and size .evtx files before loading them, and \
                                             report the worker version.",
                         }),
+                        serde_json::json!({
+                            "name": "Reference Data",
+                            "description": "Curated, browsable lookup data — well-known Windows \
+                                            Event IDs and their DFIR meaning — that needs no .evtx \
+                                            input.",
+                        }),
                     ])
                     .expect("categories serialize to JSON"),
                 ),
             ],
-            views: Vec::new(),
+            views: vec![event_id_reference_view()],
             macros: Vec::new(),
             tables: Vec::new(),
         }],
