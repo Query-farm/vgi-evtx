@@ -150,7 +150,10 @@ impl TableFunction for EvtxRecords {
                         "channel",
                     ],
                 );
-                tags.push(("vgi.result_columns_schema".into(), RESULT_COLUMNS_SCHEMA.into()));
+                tags.push((
+                    "vgi.result_columns_schema".into(),
+                    RESULT_COLUMNS_SCHEMA.into(),
+                ));
                 tags.push(("vgi.executable_examples".into(), EXECUTABLE_EXAMPLES.into()));
                 tags
             },
