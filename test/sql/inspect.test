@@ -84,12 +84,6 @@ SELECT is_valid_evtx(NULL::BLOB) IS NULL;
 ----
 true
 
-# evtx_version() returns a non-empty string.
-query I
-SELECT length(evtx_version()) > 0;
-----
-true
-
 statement ok
 USE memory;
 

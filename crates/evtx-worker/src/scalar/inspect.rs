@@ -52,24 +52,38 @@ impl ScalarFunction for EvtxRecordCount {
                     expected_output: None,
                 },
             ],
-            tags: crate::meta::object_tags(
-                "Count Event Records in EVTX",
-                "Return the number of event records in a Windows Event Log (.evtx) file, supplied \
-                 as inline BLOB bytes or a VARCHAR path. Returns 0 for malformed, truncated, or \
-                 non-evtx input and NULL for NULL input; it never raises on hostile bytes.",
-                "Count event records in a `.evtx` file (BLOB or path). Returns `0` for \
-                 malformed/garbage input.",
-                "Inspection & Diagnostics",
-                &[
-                    "evtx record count",
-                    "count events",
-                    "number of records",
-                    "event log size",
-                    "evtx_record_count",
-                    "windows event log",
-                    "dfir",
-                ],
-            ),
+            tags: {
+                let mut tags = crate::meta::object_tags(
+                    "Count Event Records in EVTX",
+                    "Return the number of event records in a Windows Event Log (.evtx) file, \
+                     supplied as inline `BLOB` bytes or a `VARCHAR` path. Returns 0 for malformed, \
+                     truncated, or non-evtx input and NULL for NULL input; it never raises on \
+                     hostile bytes.",
+                    "Count event records in a `.evtx` file (`BLOB` or path). Returns `0` for \
+                     malformed/garbage input.",
+                    "Inspection & Diagnostics",
+                    &[
+                        "evtx record count",
+                        "count events",
+                        "number of records",
+                        "event log size",
+                        "evtx_record_count",
+                        "windows event log",
+                        "dfir",
+                    ],
+                );
+                // VGI515: described example list. Byte-identical SQL to the native
+                // `examples` above so the carriers dedup to the described entry.
+                tags.push((
+                    "vgi.example_queries".into(),
+                    r#"[
+  {"description": "Count the event records in a .evtx file read as a BLOB.", "sql": "SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('Security.evtx')));"},
+  {"description": "Non-evtx bytes count as 0 records (hostile input is handled, not an error).", "sql": "SELECT evtx.main.evtx_record_count('not a real evtx'::BLOB) AS records;"}
+]"#
+                    .into(),
+                ));
+                tags
+            },
             ..Default::default()
         }
     }
@@ -137,27 +151,39 @@ impl ScalarFunction for IsValidEvtx {
                     expected_output: None,
                 },
             ],
-            tags: crate::meta::object_tags(
-                "Validate EVTX File Bytes",
-                "Return true when the input is a parseable Windows Event Log (.evtx) file: it has \
-                 the ElfFile magic and the parser constructs successfully. Returns false for \
-                 malformed, truncated, or non-evtx input and NULL for NULL input. Input is inline \
-                 BLOB bytes or a VARCHAR path. Use it to gate processing before calling \
-                 evtx_records.",
-                "Test whether bytes are a parseable `.evtx` file. Returns `false` for \
-                 malformed/garbage input.",
-                "Inspection & Diagnostics",
-                &[
-                    "validate evtx",
-                    "is valid evtx",
-                    "check evtx",
-                    "parseable",
-                    "elffile magic",
-                    "is_valid_evtx",
-                    "windows event log",
-                    "dfir",
-                ],
-            ),
+            tags: {
+                let mut tags = crate::meta::object_tags(
+                    "Validate EVTX File Bytes",
+                    "Return true when the input is a parseable Windows Event Log (.evtx) file: it \
+                     has the ElfFile magic and the parser constructs successfully. Returns false \
+                     for malformed, truncated, or non-evtx input and NULL for NULL input. Input is \
+                     inline `BLOB` bytes or a `VARCHAR` path. Use it to gate processing before \
+                     calling evtx_records.",
+                    "Test whether bytes are a parseable `.evtx` file. Returns `false` for \
+                     malformed/garbage input.",
+                    "Inspection & Diagnostics",
+                    &[
+                        "validate evtx",
+                        "is valid evtx",
+                        "check evtx",
+                        "parseable",
+                        "elffile magic",
+                        "is_valid_evtx",
+                        "windows event log",
+                        "dfir",
+                    ],
+                );
+                // VGI515: described example list, byte-identical to native examples.
+                tags.push((
+                    "vgi.example_queries".into(),
+                    r#"[
+  {"description": "Check whether a file's bytes are a parseable .evtx before processing.", "sql": "SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));"},
+  {"description": "Non-evtx bytes are reported as not valid (false), not an error.", "sql": "SELECT evtx.main.is_valid_evtx('not a real evtx'::BLOB) AS valid;"}
+]"#
+                    .into(),
+                ));
+                tags
+            },
             ..Default::default()
         }
     }

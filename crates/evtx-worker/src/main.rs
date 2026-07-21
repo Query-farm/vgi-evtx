@@ -84,8 +84,8 @@ fn event_id_reference_view() -> CatView {
     let mut tags = meta::object_tags(
         "Well-Known Windows Event ID Lookup for DFIR",
         "A curated, browsable registry of well-known Windows Event IDs and what they mean for \
-         digital-forensics and incident-response work. Columns: event_id (INTEGER), channel \
-         (VARCHAR), name (short label), dfir_use (why it matters). Scan it to discover which \
+         digital-forensics and incident-response work. Columns: event_id (`INTEGER`), channel \
+         (`VARCHAR`), name (short label), dfir_use (why it matters). Scan it to discover which \
          event ids to look for, or LEFT JOIN it onto evtx_records.event_id to label parsed \
          records with human-readable meanings. It is static reference data — no .evtx input and \
          no network access.",
@@ -151,7 +151,9 @@ fn event_id_reference_view() -> CatView {
     }
 }
 
-/// Worker version string, surfaced by `evtx_version()`.
+/// Build version of the worker binary, published as the catalog's
+/// `implementation_version` (readable from `vgi_catalogs()` without spending a
+/// query, and guaranteed to match the running build).
 pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
@@ -198,8 +200,8 @@ fn catalog_metadata(name: &str) -> CatalogModel {
             (
                 "vgi.doc_llm".to_string(),
                 "Parse Windows Event Log (.evtx) files into SQL rows for digital-forensics and \
-                 incident-response (DFIR) work. Accepts a .evtx file as inline BLOB bytes or a \
-                 VARCHAR path. Use to count records in a log, test whether bytes are a valid \
+                 incident-response (DFIR) work. Accepts a .evtx file as inline `BLOB` bytes or a \
+                 `VARCHAR` path. Use to count records in a log, test whether bytes are a valid \
                  .evtx, and explode a log into one row per event record (record_id, event_id, \
                  provider, channel, computer, level, time_created, and the full event_json). The \
                  preserved event_json composes with vgi-sigma's sigma_match(event_json, rule) for \
@@ -270,13 +272,6 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                 "vgi.agent_test_tasks".to_string(),
                 serde_json::to_string(&[
                     serde_json::json!({
-                        "name": "worker_version",
-                        "prompt": "Report the version string of the attached evtx worker.",
-                        "reference_sql": "SELECT evtx.main.evtx_version();",
-                        // Value-only compare: the analyst may alias the column.
-                        "ignore_column_names": true,
-                    }),
-                    serde_json::json!({
                         "name": "validate_bad_bytes",
                         "prompt": "Is the byte string 'this is not an event log' a valid, \
                                    parseable Windows Event Log (.evtx)? Answer with the boolean \
@@ -343,6 +338,11 @@ fn catalog_metadata(name: &str) -> CatalogModel {
             ),
         ],
         source_url: Some("https://github.com/Query-farm/vgi-evtx".to_string()),
+        // Publish the worker build version here (VGI328): an agent reads it from
+        // `vgi_catalogs()` without spending a query, and it cannot drift from the
+        // running binary — which is why there is no parameterless version()
+        // scalar in the surface.
+        implementation_version: Some(version().to_string()),
         schemas: vec![CatSchema {
             name: "main".to_string(),
             comment: Some(
@@ -374,23 +374,26 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                 ("domain".to_string(), "security".to_string()),
                 ("category".to_string(), "parsing".to_string()),
                 ("topic".to_string(), "windows-event-log".to_string()),
-                // VGI506 representative example queries for the schema (display).
+                // VGI506/VGI515 representative example queries for the schema, as
+                // a described JSON list (every example carries a human-readable
+                // description).
                 (
                     "vgi.example_queries".to_string(),
-                    "SELECT evtx.main.evtx_version();\n\
-                     SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));\n\
-                     SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('Security.evtx')));\n\
-                     SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records('Security.evtx') ORDER BY record_id;\n\
-                     SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('Security.evtx') GROUP BY event_id ORDER BY n DESC;"
-                        .to_string(),
+                    r#"[
+  {"description": "Validate that a file's bytes are a parseable .evtx before loading it.", "sql": "SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));"},
+  {"description": "Count how many event records a .evtx file contains.", "sql": "SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('Security.evtx')));"},
+  {"description": "Explode a .evtx file into one row per event record, ordered by record id.", "sql": "SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records('Security.evtx') ORDER BY record_id;"},
+  {"description": "Rank event ids by how often they occur to surface the noisiest activity.", "sql": "SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('Security.evtx') GROUP BY event_id ORDER BY n DESC;"}
+]"#
+                    .to_string(),
                 ),
                 (
                     "vgi.doc_llm".to_string(),
                     "Windows Event Log (.evtx) parsing and inspection functions: count event \
                      records, validate that bytes are a parseable .evtx, and explode a .evtx \
                      file into one row per event record with the full event JSON preserved for \
-                     downstream detection. All functions accept the file as inline BLOB bytes or \
-                     a VARCHAR path and tolerate hostile input without erroring."
+                     downstream detection. All functions accept the file as inline `BLOB` bytes or \
+                     a `VARCHAR` path and tolerate hostile input without erroring."
                         .to_string(),
                 ),
                 (

@@ -60,9 +60,11 @@ else (e.g. `EventData`) is available in `event_json`.
 | --- | --- | --- |
 | `evtx_record_count(input)` | `BIGINT` | Number of event records (`0` for malformed/garbage input). |
 | `is_valid_evtx(input)` | `BOOLEAN` | True if the input has the `ElfFile` magic and the parser constructs. |
-| `evtx_version()` | `VARCHAR` | Worker version string. |
 
 For the scalars, `input` is a BLOB or a VARCHAR path, taken from a row column.
+
+The worker build version is published as the catalog's `implementation_version`
+(read it from `vgi_catalogs()`), not as a scalar function.
 
 ## Hostile-input handling
 

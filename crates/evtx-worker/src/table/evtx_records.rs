@@ -32,8 +32,8 @@ use crate::evtx_parse::{self, EvtxRow};
 /// `expected_result` — the linter only needs each query to execute.
 const EXECUTABLE_EXAMPLES: &str = r#"[
   {
-    "description": "Report the running evtx worker version.",
-    "sql": "SELECT evtx.main.evtx_version() AS version"
+    "description": "Non-evtx bytes yield zero rows from evtx_records (hostile input is handled, never an error).",
+    "sql": "SELECT count(*) AS n FROM evtx.main.evtx_records('not a real evtx'::BLOB)"
   },
   {
     "description": "Non-evtx bytes are reported as not valid (false), never an error.",
@@ -43,6 +43,13 @@ const EXECUTABLE_EXAMPLES: &str = r#"[
     "description": "Non-evtx bytes count as zero event records (hostile input is handled).",
     "sql": "SELECT evtx.main.evtx_record_count('not a real evtx'::BLOB) AS records"
   }
+]"#;
+
+/// VGI515 described example list for `evtx_records`. Byte-identical SQL to the
+/// native `examples` below so the two carriers dedup to the described entry.
+const EXAMPLE_QUERIES: &str = r#"[
+  {"description": "Explode a .evtx file at the given path into one row per event record, ordered by record id.", "sql": "SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') ORDER BY record_id;"},
+  {"description": "Rank event ids by frequency to surface the noisiest activity in a log.", "sql": "SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') GROUP BY event_id ORDER BY n DESC;"}
 ]"#;
 
 /// Static result-schema declaration (VGI307/VGI414): the structured replacement
@@ -126,13 +133,13 @@ impl TableFunction for EvtxRecords {
                 let mut tags = crate::meta::object_tags(
                     "Explode EVTX File into Event Rows",
                     "Parse a Windows Event Log (.evtx) file into one row per event record. Input \
-                     is a bind-time constant: either inline BLOB bytes or a VARCHAR path to the \
-                     file. Each row exposes record_id, event_id, provider, channel, computer, \
-                     level, time_created (UTC TIMESTAMP), and event_json — the full normalized \
+                     is a bind-time constant: either inline `BLOB` bytes or a `VARCHAR` path to \
+                     the file. Each row exposes record_id, event_id, provider, channel, computer, \
+                     level, time_created (UTC `TIMESTAMP`), and event_json — the full normalized \
                      event JSON that composes with vgi-sigma's sigma_match(event_json, rule). A \
                      NULL, missing, malformed, or garbage input yields zero rows, never an error.",
-                    "Explode a `.evtx` file (BLOB or path) into one row per event record, with the \
-                     full `event_json` preserved for detection.",
+                    "Explode a `.evtx` file (`BLOB` or path) into one row per event record, with \
+                     the full `event_json` preserved for detection.",
                     "Event Record Parsing",
                     &[
                         "evtx records",
@@ -154,6 +161,7 @@ impl TableFunction for EvtxRecords {
                     "vgi.result_columns_schema".into(),
                     RESULT_COLUMNS_SCHEMA.into(),
                 ));
+                tags.push(("vgi.example_queries".into(), EXAMPLE_QUERIES.into()));
                 tags.push(("vgi.executable_examples".into(), EXECUTABLE_EXAMPLES.into()));
                 tags
             },

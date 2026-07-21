@@ -21,7 +21,7 @@ crates/evtx-worker/
   src/main.rs                       Worker::new(); registers scalars + table fn
   src/evtx_parse.rs                 PURE logic (no Arrow): parse_records / record_count / is_valid + unit tests
   src/arrow_io.rs                   BLOB-or-VARCHAR-path input reads + in-process scalar test harness
-  src/scalar/{inspect,version,mod}.rs   thin Arrow scalar adapters (evtx_record_count, is_valid_evtx, evtx_version)
+  src/scalar/{inspect,mod}.rs         thin Arrow scalar adapters (evtx_record_count, is_valid_evtx)
   src/table/{evtx_records,mod}.rs   thin Arrow table-producer adapter (8 typed columns incl. TIMESTAMP)
   tests/parse.rs                    integration tests (include evtx_parse.rs by #[path], like vgi-ioc)
 test/sql/*.test                     haybarn-unittest sqllogictest — authoritative E2E
@@ -86,7 +86,9 @@ header timestamp (`chrono::DateTime<Utc>`) as microseconds since epoch →
    `on_bind` schema must match the array built in `next_batch`.
 4. **Determinism in SQL tests:** `evtx_records` rows are emitted in file order;
    tests still `ORDER BY record_id` (or `rowsort`) for stable comparison.
-5. **Scalars are positional-only**, arity-1 (or 0 for `evtx_version`).
+5. **Scalars are positional-only**, arity-1. The worker build version is not a
+   scalar function (VGI328): it is published as the catalog's
+   `implementation_version` and read from `vgi_catalogs()`.
 
 ## Tests
 
