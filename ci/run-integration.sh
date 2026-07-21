@@ -127,7 +127,17 @@ case "$TRANSPORT" in
     # VGI_EVTX_WORKER (e.g. a bare command) if the caller set one.
     export VGI_EVTX_WORKER="${VGI_EVTX_WORKER:-$WORKER_BIN}"
     ;;
-  http)  start_server_and_set_location http ;;
+  http)
+    # Honor a pre-launched HTTP worker (e.g. a running container in the docker
+    # image_test): if VGI_EVTX_WORKER already points at an http(s) URL, use it
+    # as-is and skip spawning a local binary. Otherwise launch evtx-worker
+    # --http ourselves (with cwd = $STAGE, so the VARCHAR-path fixtures resolve).
+    if [[ "${VGI_EVTX_WORKER:-}" =~ ^https?:// ]]; then
+      echo "Using pre-launched HTTP worker at $VGI_EVTX_WORKER"
+    else
+      start_server_and_set_location http
+    fi
+    ;;
   unix)  start_server_and_set_location unix ;;
   *) echo "ERROR: unknown TRANSPORT '$TRANSPORT' (want subprocess|http|unix)" >&2; exit 1 ;;
 esac
