@@ -14,8 +14,8 @@
 
 # ---- build stage -----------------------------------------------------------
 # Pinned glibc (bookworm) so the binary links against the same libc the slim
-# runtime ships. The workspace MSRV is 1.90; `rust:1-bookworm` tracks a current
-# stable toolchain that satisfies it (and the edition-2024 `evtx` 0.12 dep).
+# runtime ships. The workspace MSRV is 1.97; `rust:1-bookworm` tracks a current
+# stable toolchain that satisfies it (and the edition-2024 `evtx` 0.13 dep).
 FROM rust:1-bookworm AS build
 WORKDIR /src
 

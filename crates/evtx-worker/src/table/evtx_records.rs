@@ -255,4 +255,9 @@ impl TableProducer for RecordsProducer {
                 .map_err(|e| RpcError::runtime_error(e.to_string()))?,
         ))
     }
+    fn resume_supported(&self) -> bool {
+        // Single batch: every record is emitted on the first call, so there is
+        // no cursor to resume.
+        false
+    }
 }

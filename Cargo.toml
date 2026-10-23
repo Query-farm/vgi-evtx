@@ -16,27 +16,27 @@ authors = ["Query Farm LLC <hello@query.farm>"]
 repository = "https://github.com/Query-farm/vgi-evtx"
 
 [workspace.dependencies]
-# VGI Rust SDK (worker side). 0.24 provides the wasm `vgi::wasm_worker!` macro
-# used by evtx-wasm; requires rustc 1.97 (see rust-version above). Base
+# VGI Rust SDK (worker side). Provides the wasm `vgi::wasm_worker!` macro
+# used by evtx-wasm (since 0.24); 0.46 requires rustc 1.97 (see rust-version above). Base
 # (feature-less) so each target can opt in: the native build takes the SDK's
 # real defaults (`sqlite` + `transport-http`) while the wasm build must NOT —
 # tokio/mio/axum and bundled SQLite do not compile for wasm32, and the browser
 # transport serves over a byte channel rather than HTTP. Features are additive
 # and the two are behind mutually-exclusive target cfgs.
-vgi = { version = "0.24", default-features = false }
-vgi-rpc = { version = "0.16", default-features = false, features = ["macros"] }
-arrow-array = "59"
-arrow-buffer = "59"
-arrow-schema = "59"
+vgi = { version = "0.46", default-features = false }
+vgi-rpc = { version = "0.32", default-features = false, features = ["macros"] }
+arrow-array = "60"
+arrow-buffer = "60"
+arrow-schema = "60"
 
 # Windows Event Log (.evtx) parser — pure Rust, dual MIT/Apache-2.0
-# (omerbenamram/evtx). evtx 0.12.2 is edition 2024 / uses let-chains and needs
-# rustc >= 1.87/1.88; the workspace MSRV of 1.90 (raised in lockstep with vgi
-# 0.6.0) covers that. `default-features = false` drops the optional `simplelog`
-# logging feature — we only need the parser. The JSON output is consumed via
+# (omerbenamram/evtx). evtx 0.12+ is edition 2024 / uses let-chains and needs
+# rustc >= 1.87/1.88; the workspace MSRV of 1.97 covers that.
+# `default-features = false` drops the `evtx_dump` CLI (simplelog/clap/...) and
+# `multithreading` features — we only need the parser. The JSON output is consumed via
 # serde_json. Note: 0.12 switched its record timestamp from chrono to
 # jiff::Timestamp (use `.as_microsecond()`).
-evtx = { version = "0.12.2", default-features = false }
+evtx = { version = "0.13", default-features = false }
 serde_json = "1"
 
 [profile.release]

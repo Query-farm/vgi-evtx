@@ -1,0 +1,32 @@
+# Private graders for the agent-suitability suite (`vgi-lint simulate`).
+#
+# The prompts are published in the catalog's vgi.agent_test_tasks tag
+# (crates/evtx-worker/src/lib.rs); the answers live here, keyed by task name,
+# so the agent being graded never sees them. vgi-lint discovers this file in
+# the directory it runs from. Every reference runs against the committed
+# fixture test/sql/data/sample-security.evtx or the built-in reference view.
+
+tasks:
+  - name: validate_bad_bytes
+    reference_sql: "SELECT evtx.main.is_valid_evtx('this is not an event log'::BLOB);"
+    ignore_column_names: true
+  - name: validate_file
+    reference_sql: "SELECT evtx.main.is_valid_evtx('test/sql/data/sample-security.evtx');"
+    ignore_column_names: true
+  - name: count_records
+    reference_sql: "SELECT evtx.main.evtx_record_count('test/sql/data/sample-security.evtx');"
+    ignore_column_names: true
+  - name: top_event_ids
+    reference_sql: "SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') GROUP BY event_id;"
+    unordered: true
+    ignore_column_names: true
+  - name: distinct_providers
+    reference_sql: "SELECT DISTINCT provider FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx');"
+    unordered: true
+    ignore_column_names: true
+  - name: event_id_reference_lookup
+    reference_sql: "SELECT name FROM evtx.main.windows_event_id_reference WHERE event_id = 4688;"
+    ignore_column_names: true
+  - name: security_reference_count
+    reference_sql: "SELECT count(*) FROM evtx.main.windows_event_id_reference WHERE channel = 'Security';"
+    ignore_column_names: true

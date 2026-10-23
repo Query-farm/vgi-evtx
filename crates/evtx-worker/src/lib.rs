@@ -263,8 +263,10 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                 "https://github.com/Query-farm/vgi-evtx/blob/main/README.md".to_string(),
             ),
             // VGI152 / VGI920: an analyst-task suite so `vgi-lint simulate` can
-            // measure how well an agent actually uses this worker. Each task's
-            // reference_sql is self-contained and runs against the committed
+            // measure how well an agent actually uses this worker. Only the
+            // public name/prompt ride this tag (VGI416); the private graders
+            // live in vgi-agent-tests.yaml at the repo root, keyed by task name.
+            // Each reference is self-contained and runs against the committed
             // fixture (test/sql/data/sample-security.evtx, 7 records) or the
             // hardened hostile-input path, so it executes without any external
             // .evtx file.
@@ -276,8 +278,6 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                         "prompt": "Is the byte string 'this is not an event log' a valid, \
                                    parseable Windows Event Log (.evtx)? Answer with the boolean \
                                    the worker returns.",
-                        "reference_sql": "SELECT evtx.main.is_valid_evtx('this is not an event log'::BLOB);",
-                        "ignore_column_names": true,
                     }),
                     serde_json::json!({
                         "name": "validate_file",
@@ -285,8 +285,6 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                                    'test/sql/data/sample-security.evtx' is a valid, parseable \
                                    Windows Event Log. Pass the path string to the validation \
                                    function.",
-                        "reference_sql": "SELECT evtx.main.is_valid_evtx('test/sql/data/sample-security.evtx');",
-                        "ignore_column_names": true,
                     }),
                     serde_json::json!({
                         "name": "count_records",
@@ -294,8 +292,6 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                                    Windows Event Log file at the path \
                                    'test/sql/data/sample-security.evtx'. Pass the path string to \
                                    the record-count function.",
-                        "reference_sql": "SELECT evtx.main.evtx_record_count('test/sql/data/sample-security.evtx');",
-                        "ignore_column_names": true,
                     }),
                     serde_json::json!({
                         "name": "top_event_ids",
@@ -303,35 +299,22 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                                    'test/sql/data/sample-security.evtx' with the evtx worker and \
                                    list each distinct event id together with how many records \
                                    have that id.",
-                        "reference_sql": "SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') GROUP BY event_id;",
-                        // Set-of-rows compare: any row order and any column aliases pass.
-                        "unordered": true,
-                        "ignore_column_names": true,
                     }),
                     serde_json::json!({
                         "name": "distinct_providers",
                         "prompt": "Parse the event log at the path \
                                    'test/sql/data/sample-security.evtx' with the evtx worker and \
                                    list the distinct event provider names that appear in it.",
-                        "reference_sql": "SELECT DISTINCT provider FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx');",
-                        "unordered": true,
-                        "ignore_column_names": true,
                     }),
                     serde_json::json!({
                         "name": "event_id_reference_lookup",
                         "prompt": "Using the evtx worker's built-in Windows Event ID reference \
                                    data, what is the short name for event id 4688?",
-                        // Answerable purely from the browsable reference view — no
-                        // .evtx input needed. Deterministic string value.
-                        "reference_sql": "SELECT name FROM evtx.main.windows_event_id_reference WHERE event_id = 4688;",
-                        "ignore_column_names": true,
                     }),
                     serde_json::json!({
                         "name": "security_reference_count",
                         "prompt": "Using the evtx worker's Windows Event ID reference, how many \
                                    distinct Security-channel event ids does it catalogue?",
-                        "reference_sql": "SELECT count(*) FROM evtx.main.windows_event_id_reference WHERE channel = 'Security';",
-                        "ignore_column_names": true,
                     }),
                 ])
                 .expect("agent test tasks serialize to JSON"),
@@ -345,6 +328,7 @@ fn catalog_metadata(name: &str) -> CatalogModel {
         implementation_version: Some(version().to_string()),
         schemas: vec![CatSchema {
             name: "main".to_string(),
+            path: Vec::new(),
             comment: Some(
                 "Windows Event Log (.evtx) parsing and inspection functions.".to_string(),
             ),
