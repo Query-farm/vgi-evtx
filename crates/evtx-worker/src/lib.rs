@@ -148,6 +148,7 @@ fn event_id_reference_view() -> CatView {
                     .to_string(),
             ),
         ],
+        ..Default::default()
     }
 }
 

@@ -156,9 +156,9 @@ cat > "$STAGE/test/_warm.test" <<'EOF'
 # name: test/_warm.test
 # group: [warm]
 statement ok
-INSTALL vgi FROM community;
+FORCE INSTALL vgi FROM community;
 EOF
-"$HAYBARN_UNITTEST" "test/_warm.test" >/dev/null 2>&1 || echo "::warning::extension warm step did not fully succeed"
+"$HAYBARN_UNITTEST" --keep-home "test/_warm.test" >/dev/null 2>&1 || echo "::warning::extension warm step did not fully succeed"
 rm -f "$STAGE/test/_warm.test"
 
 # Run the whole suite in one invocation, streaming the runner's native
@@ -172,7 +172,7 @@ rm -f "$STAGE/test/_warm.test"
 echo "Running suite (transport: $TRANSPORT, worker: $VGI_EVTX_WORKER) ..."
 REPORT="$STAGE/.report.txt"
 set +e
-"$HAYBARN_UNITTEST" "test/sql/*" 2>&1 | tee "$REPORT"
+"$HAYBARN_UNITTEST" --keep-home "test/sql/*" 2>&1 | tee "$REPORT"
 status="${PIPESTATUS[0]}"
 set -e
 if grep -qiE "All tests were skipped|total skipped [1-9]" "$REPORT"; then

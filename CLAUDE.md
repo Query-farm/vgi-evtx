@@ -16,7 +16,7 @@ rule)`.
 ## Layout
 
 ```
-Cargo.toml                          workspace; pins vgi = "0.46", evtx = "0.13", serde_json
+Cargo.toml                          workspace; pins vgi = "0.49.2", evtx = "0.15", serde_json
 crates/evtx-worker/
   src/main.rs                       Worker::new(); registers scalars + table fn
   src/evtx_parse.rs                 PURE logic (no Arrow): parse_records / record_count / is_valid + unit tests
@@ -35,13 +35,10 @@ harness-tested).
 
 ## MSRV pin (the load-bearing dependency decision)
 
-The workspace `rust-version` is `1.86`. `evtx >= 0.10` is **edition 2024** and
-uses let-chains → needs rustc ≥ 1.88. We therefore pin **`evtx = "0.8.5"`**
-(edition 2021, builds on 1.86) with `default-features = false` to drop the
-optional `simplelog` feature, which transitively pulls a `time` that *also*
-needs rustc 1.88. If you ever bump the workspace MSRV to ≥ 1.88 you can move to a
-newer evtx. Do not enable evtx default features without re-checking the `time`
-MSRV.
+The workspace `rust-version` is `1.97` (required by the vgi SDK). `evtx` is on
+`0.15` with `default-features = false`, which drops the optional `simplelog`
+feature (and the `time` crate it pulls in). Do not enable evtx default features
+without re-checking what they add to the native and wasm builds.
 
 ## Input: BLOB or VARCHAR path
 
