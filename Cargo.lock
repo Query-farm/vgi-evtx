@@ -719,7 +719,7 @@ dependencies = [
 
 [[package]]
 name = "evtx-wasm"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "evtx-worker",
  "vgi",
@@ -727,7 +727,7 @@ dependencies = [
 
 [[package]]
 name = "evtx-worker"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "arrow-array",
  "arrow-buffer",
