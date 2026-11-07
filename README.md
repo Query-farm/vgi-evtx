@@ -21,7 +21,7 @@ output composes with [`vgi-sigma`](../vgi-sigma)'s
 
 ```sql
 LOAD vgi;
-ATTACH 'evtx' (TYPE vgi, LOCATION './target/release/evtx-worker');
+ATTACH 'evtx' (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-evtx@v0.2.0');
 SET search_path = 'evtx.main';
 
 -- One row per event record. Input is the .evtx file as a BLOB …
@@ -40,6 +40,39 @@ SELECT is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));      -- 
 --   SELECT * FROM evtx_records('Security.evtx')
 --   WHERE sigma_match(event_json, '<rule yaml>');
 ```
+
+## Quick start
+
+Every [GitHub release](https://github.com/Query-farm/vgi-evtx/releases) ships a prebuilt worker binary. The `vgi` extension downloads the one for your platform, checks its SHA-256 and caches it, so there is nothing to install besides DuckDB:
+
+```sql
+INSTALL vgi FROM community;
+LOAD vgi;
+
+ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-evtx@v0.2.0');
+
+-- Validate that a file's bytes are a parseable .evtx before loading it.
+SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));
+
+-- Count how many event records a .evtx file contains.
+SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('Security.evtx')));
+```
+
+Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64). `github-auto://` needs an explicit release tag; change `@v0.2.0` to move to a newer release.
+
+### Other ways to run it
+
+- **Docker** (the image bundles the worker; needs a container runtime):
+
+  ```sql
+  ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-evtx:0.2.0');
+  ```
+
+- **Manual download.** Download the archive for your platform from the [releases page](https://github.com/Query-farm/vgi-evtx/releases), verify it against its `.sha256` file (a cosign `.cosign.bundle` is published alongside), unpack it, and set `LOCATION` to the path of the extracted worker executable.
+
+### Build from source
+
+To build the worker yourself, see [Building & testing](#building--testing).
 
 ## Functions
 
