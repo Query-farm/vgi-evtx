@@ -82,7 +82,7 @@ const EVENT_ID_REFERENCE_EXAMPLES: &str = r#"[
 /// Build the `windows_event_id_reference` view (VGI146 browsable entry point).
 fn event_id_reference_view() -> CatView {
     let mut tags = meta::object_tags(
-        "Well-Known Windows Event ID Lookup for DFIR",
+        "Event ID Lookup",
         "A curated, browsable registry of well-known Windows Event IDs and what they mean for \
          digital-forensics and incident-response work. Columns: event_id (`INTEGER`), channel \
          (`VARCHAR`), name (short label), dfir_use (why it matters). Scan it to discover which \
@@ -174,7 +174,13 @@ fn catalog_metadata(name: &str) -> CatalogModel {
         tags: vec![
             (
                 "vgi.title".to_string(),
-                "Windows Event Log (.evtx) Parsing for DFIR".to_string(),
+                "Windows Event Log Parser".to_string(),
+            ),
+            (
+                "vgi.subtitle".to_string(),
+                "Parse Windows .evtx event-log files into queryable SQL rows for forensics and \
+                 incident response."
+                    .to_string(),
             ),
             (
                 "vgi.keywords".to_string(),
@@ -334,7 +340,7 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                 "Windows Event Log (.evtx) parsing and inspection functions.".to_string(),
             ),
             tags: vec![
-                ("vgi.title".to_string(), "evtx — main".to_string()),
+                ("vgi.title".to_string(), "Event Log Functions".to_string()),
                 (
                     "vgi.keywords".to_string(),
                     serde_json::to_string(&[
