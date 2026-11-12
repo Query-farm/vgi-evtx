@@ -16,7 +16,7 @@ rule)`.
 ## Layout
 
 ```
-Cargo.toml                          workspace; pins vgi = "0.50.0", evtx = "0.15", serde_json
+Cargo.toml                          workspace; pins vgi = "0.51.0", evtx = "0.15", serde_json
 crates/evtx-worker/
   src/main.rs                       Worker::new(); registers scalars + table fn
   src/evtx_parse.rs                 PURE logic (no Arrow): parse_records / record_count / is_valid + unit tests
