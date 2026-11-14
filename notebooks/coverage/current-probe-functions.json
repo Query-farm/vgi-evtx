@@ -1,0 +1,181 @@
+{
+  "query": "SELECT * FROM duckdb_functions() WHERE database_name='evtx'",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "schema_name",
+    "function_name",
+    "alias_of",
+    "function_type",
+    "description",
+    "comment",
+    "tags",
+    "return_type",
+    "parameters",
+    "parameter_types",
+    "varargs",
+    "macro_definition",
+    "has_side_effects",
+    "internal",
+    "extension_name",
+    "function_oid",
+    "examples",
+    "stability",
+    "categories"
+  ],
+  "rows": [
+    [
+      "evtx",
+      "22592",
+      "main",
+      "evtx_records",
+      null,
+      "table",
+      "Parse a .evtx file (BLOB bytes or VARCHAR path) into one row per event record; event_json carries the full normalized event JSON",
+      null,
+      {
+        "vgi.category": "Event Record Parsing",
+        "vgi.doc_llm": "Parse a Windows Event Log (.evtx) file into one row per event record. Input is a bind-time constant: either inline `BLOB` bytes or a `VARCHAR` path to the file. Each row exposes record_id, event_id, provider, channel, computer, level, time_created (UTC `TIMESTAMP`), and event_json — the full normalized event JSON that composes with vgi-sigma's sigma_match(event_json, rule). A NULL, missing, malformed, or garbage input yields zero rows, never an error.",
+        "vgi.doc_md": "Explode a `.evtx` file (`BLOB` or path) into one row per event record, with the full `event_json` preserved for detection.",
+        "vgi.example_queries": "[\n  {\n    \"description\": \"Explode a .evtx file at the given path into one row per event record, ordered by record id.\",\n    \"sql\": \"SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') ORDER BY record_id;\"\n  },\n  {\n    \"description\": \"Label each parsed record with its human-readable meaning by LEFT JOINing the event id reference onto evtx_records (meaning is NULL for ids the reference does not catalogue).\",\n    \"sql\": \"SELECT r.record_id, r.event_id, ref.name AS meaning, r.time_created FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r LEFT JOIN evtx.main.windows_event_id_reference AS ref ON ref.event_id = r.event_id AND ref.channel = r.channel ORDER BY r.record_id;\"\n  },\n  {\n    \"description\": \"Rank event ids by frequency to surface the noisiest activity in a log.\",\n    \"sql\": \"SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') GROUP BY event_id ORDER BY n DESC;\"\n  }\n]",
+        "vgi.executable_examples": "[\n  {\n    \"description\": \"Non-evtx bytes yield zero rows from evtx_records (hostile input is handled, never an error).\",\n    \"sql\": \"SELECT count(*) AS n FROM evtx.main.evtx_records('not a real evtx'::BLOB)\"\n  },\n  {\n    \"description\": \"Non-evtx bytes are reported as not valid (false), never an error.\",\n    \"sql\": \"SELECT evtx.main.is_valid_evtx('not a real evtx'::BLOB) AS valid\"\n  },\n  {\n    \"description\": \"Non-evtx bytes count as zero event records (hostile input is handled).\",\n    \"sql\": \"SELECT evtx.main.evtx_record_count('not a real evtx'::BLOB) AS records\"\n  }\n]",
+        "vgi.keywords": "[\"evtx records\",\"parse evtx\",\"windows event log\",\"explode events\",\"one row per event\",\"evtx_records\",\"event_json\",\"sigma\",\"dfir\",\"forensics\",\"event id\",\"provider\",\"channel\"]",
+        "vgi.result_columns_schema": "[\n  {\"name\": \"record_id\", \"type\": \"BIGINT\", \"description\": \"The event record's identifier, assigned in file order.\"},\n  {\"name\": \"event_id\", \"type\": \"INTEGER\", \"description\": \"The Windows Event ID from Event.System.EventID (e.g. 4624 = successful logon).\"},\n  {\"name\": \"provider\", \"type\": \"VARCHAR\", \"description\": \"Event provider name from Event.System.Provider/@Name (e.g. Microsoft-Windows-Security-Auditing).\"},\n  {\"name\": \"channel\", \"type\": \"VARCHAR\", \"description\": \"Log channel the record came from, e.g. Security, System, Application.\"},\n  {\"name\": \"computer\", \"type\": \"VARCHAR\", \"description\": \"Source computer name from Event.System.Computer.\"},\n  {\"name\": \"level\", \"type\": \"INTEGER\", \"description\": \"Severity level from Event.System.Level (lower is more severe; 2 = Error, 3 = Warning, 4 = Information).\"},\n  {\"name\": \"time_created\", \"type\": \"TIMESTAMP\", \"description\": \"Record header creation time in UTC, microsecond precision.\"},\n  {\"name\": \"event_json\", \"type\": \"VARCHAR\", \"description\": \"The full normalized event as JSON; feeds vgi-sigma's sigma_match(event_json, rule).\"}\n]",
+        "vgi.title": "Explode EVTX File into Event Rows"
+      },
+      null,
+      [
+        "input"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22598,
+      [
+        "SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') ORDER BY record_id;",
+        "SELECT r.record_id, r.event_id, ref.name AS meaning, r.time_created FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r LEFT JOIN evtx.main.windows_event_id_reference AS ref ON ref.event_id = r.event_id AND ref.channel = r.channel ORDER BY r.record_id;"
+      ],
+      null,
+      []
+    ],
+    [
+      "evtx",
+      "22592",
+      "main",
+      "evtx_records",
+      null,
+      "table",
+      "Parse a .evtx file (BLOB bytes or VARCHAR path) into one row per event record; event_json carries the full normalized event JSON",
+      null,
+      {
+        "vgi.category": "Event Record Parsing",
+        "vgi.doc_llm": "Parse a Windows Event Log (.evtx) file into one row per event record. Input is a bind-time constant: either inline `BLOB` bytes or a `VARCHAR` path to the file. Each row exposes record_id, event_id, provider, channel, computer, level, time_created (UTC `TIMESTAMP`), and event_json — the full normalized event JSON that composes with vgi-sigma's sigma_match(event_json, rule). A NULL, missing, malformed, or garbage input yields zero rows, never an error.",
+        "vgi.doc_md": "Explode a `.evtx` file (`BLOB` or path) into one row per event record, with the full `event_json` preserved for detection.",
+        "vgi.example_queries": "[\n  {\n    \"description\": \"Explode a .evtx file at the given path into one row per event record, ordered by record id.\",\n    \"sql\": \"SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') ORDER BY record_id;\"\n  },\n  {\n    \"description\": \"Label each parsed record with its human-readable meaning by LEFT JOINing the event id reference onto evtx_records (meaning is NULL for ids the reference does not catalogue).\",\n    \"sql\": \"SELECT r.record_id, r.event_id, ref.name AS meaning, r.time_created FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r LEFT JOIN evtx.main.windows_event_id_reference AS ref ON ref.event_id = r.event_id AND ref.channel = r.channel ORDER BY r.record_id;\"\n  },\n  {\n    \"description\": \"Rank event ids by frequency to surface the noisiest activity in a log.\",\n    \"sql\": \"SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') GROUP BY event_id ORDER BY n DESC;\"\n  }\n]",
+        "vgi.executable_examples": "[\n  {\n    \"description\": \"Non-evtx bytes yield zero rows from evtx_records (hostile input is handled, never an error).\",\n    \"sql\": \"SELECT count(*) AS n FROM evtx.main.evtx_records('not a real evtx'::BLOB)\"\n  },\n  {\n    \"description\": \"Non-evtx bytes are reported as not valid (false), never an error.\",\n    \"sql\": \"SELECT evtx.main.is_valid_evtx('not a real evtx'::BLOB) AS valid\"\n  },\n  {\n    \"description\": \"Non-evtx bytes count as zero event records (hostile input is handled).\",\n    \"sql\": \"SELECT evtx.main.evtx_record_count('not a real evtx'::BLOB) AS records\"\n  }\n]",
+        "vgi.keywords": "[\"evtx records\",\"parse evtx\",\"windows event log\",\"explode events\",\"one row per event\",\"evtx_records\",\"event_json\",\"sigma\",\"dfir\",\"forensics\",\"event id\",\"provider\",\"channel\"]",
+        "vgi.result_columns_schema": "[\n  {\"name\": \"record_id\", \"type\": \"BIGINT\", \"description\": \"The event record's identifier, assigned in file order.\"},\n  {\"name\": \"event_id\", \"type\": \"INTEGER\", \"description\": \"The Windows Event ID from Event.System.EventID (e.g. 4624 = successful logon).\"},\n  {\"name\": \"provider\", \"type\": \"VARCHAR\", \"description\": \"Event provider name from Event.System.Provider/@Name (e.g. Microsoft-Windows-Security-Auditing).\"},\n  {\"name\": \"channel\", \"type\": \"VARCHAR\", \"description\": \"Log channel the record came from, e.g. Security, System, Application.\"},\n  {\"name\": \"computer\", \"type\": \"VARCHAR\", \"description\": \"Source computer name from Event.System.Computer.\"},\n  {\"name\": \"level\", \"type\": \"INTEGER\", \"description\": \"Severity level from Event.System.Level (lower is more severe; 2 = Error, 3 = Warning, 4 = Information).\"},\n  {\"name\": \"time_created\", \"type\": \"TIMESTAMP\", \"description\": \"Record header creation time in UTC, microsecond precision.\"},\n  {\"name\": \"event_json\", \"type\": \"VARCHAR\", \"description\": \"The full normalized event as JSON; feeds vgi-sigma's sigma_match(event_json, rule).\"}\n]",
+        "vgi.title": "Explode EVTX File into Event Rows"
+      },
+      null,
+      [
+        "input"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22598,
+      [
+        "SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') ORDER BY record_id;",
+        "SELECT r.record_id, r.event_id, ref.name AS meaning, r.time_created FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r LEFT JOIN evtx.main.windows_event_id_reference AS ref ON ref.event_id = r.event_id AND ref.channel = r.channel ORDER BY r.record_id;"
+      ],
+      null,
+      []
+    ],
+    [
+      "evtx",
+      "22592",
+      "main",
+      "evtx_record_count",
+      null,
+      "scalar",
+      "Number of event records in a .evtx file (BLOB bytes or VARCHAR path); 0 for malformed/garbage input",
+      null,
+      {
+        "vgi.category": "Inspection & Diagnostics",
+        "vgi.doc_llm": "Return the number of event records in a Windows Event Log (.evtx) file, supplied as inline `BLOB` bytes or a `VARCHAR` path. Returns 0 for malformed, truncated, or non-evtx input and NULL for NULL input; it never raises on hostile bytes.",
+        "vgi.doc_md": "Count event records in a `.evtx` file (`BLOB` or path). Returns `0` for malformed/garbage input.",
+        "vgi.example_queries": "[\n  {\"description\": \"Count the event records in a .evtx file read as a BLOB.\", \"sql\": \"SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('Security.evtx')));\"},\n  {\"description\": \"Non-evtx bytes count as 0 records (hostile input is handled, not an error).\", \"sql\": \"SELECT evtx.main.evtx_record_count('not a real evtx'::BLOB) AS records;\"}\n]",
+        "vgi.keywords": "[\"evtx record count\",\"count events\",\"number of records\",\"event log size\",\"evtx_record_count\",\"windows event log\",\"dfir\"]",
+        "vgi.title": "Count Event Records in EVTX"
+      },
+      "BIGINT",
+      [
+        "input"
+      ],
+      [
+        "ANY"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22596,
+      [
+        "SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('Security.evtx')));",
+        "SELECT evtx.main.evtx_record_count('not a real evtx'::BLOB) AS records;"
+      ],
+      "CONSISTENT",
+      []
+    ],
+    [
+      "evtx",
+      "22592",
+      "main",
+      "is_valid_evtx",
+      null,
+      "scalar",
+      "True if the input is a parseable .evtx (has the ElfFile magic and the parser constructs); false for malformed/garbage input",
+      null,
+      {
+        "vgi.category": "Inspection & Diagnostics",
+        "vgi.doc_llm": "Return true when the input is a parseable Windows Event Log (.evtx) file: it has the ElfFile magic and the parser constructs successfully. Returns false for malformed, truncated, or non-evtx input and NULL for NULL input. Input is inline `BLOB` bytes or a `VARCHAR` path. Use it to gate processing before calling evtx_records.",
+        "vgi.doc_md": "Test whether bytes are a parseable `.evtx` file. Returns `false` for malformed/garbage input.",
+        "vgi.example_queries": "[\n  {\n    \"description\": \"Check whether a file's bytes are a parseable .evtx before processing.\",\n    \"sql\": \"SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));\"\n  },\n  {\n    \"description\": \"Non-evtx bytes are reported as not valid (false), not an error.\",\n    \"sql\": \"SELECT evtx.main.is_valid_evtx('not a real evtx'::BLOB) AS valid;\"\n  },\n  {\n    \"description\": \"Triage a folder of collected files: flag which ones are parseable .evtx logs and how many event records each holds (non-evtx files show valid = false and 0 records).\",\n    \"sql\": \"SELECT filename, evtx.main.is_valid_evtx(content) AS valid, evtx.main.evtx_record_count(content) AS records FROM read_blob('test/sql/data/*') ORDER BY filename;\"\n  }\n]",
+        "vgi.keywords": "[\"validate evtx\",\"is valid evtx\",\"check evtx\",\"parseable\",\"elffile magic\",\"is_valid_evtx\",\"windows event log\",\"dfir\"]",
+        "vgi.title": "Validate EVTX File Bytes"
+      },
+      "BOOLEAN",
+      [
+        "input"
+      ],
+      [
+        "ANY"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22597,
+      [
+        "SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));",
+        "SELECT evtx.main.is_valid_evtx('not a real evtx'::BLOB) AS valid;",
+        "SELECT filename, evtx.main.is_valid_evtx(content) AS valid, evtx.main.evtx_record_count(content) AS records FROM read_blob('test/sql/data/*') ORDER BY filename;"
+      ],
+      "CONSISTENT",
+      []
+    ]
+  ]
+}

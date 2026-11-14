@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "repository": "Query-farm/vgi-evtx",
+  "revision": "v0.4.0",
+  "captured_at": "2026-11-14T19:43:43.952260+00:00",
+  "default_schema": "main",
+  "scope": "all_public_functions_and_tables",
+  "complete": true,
+  "evidence": [
+    {
+      "path": "coverage/catalog-provenance.json",
+      "sha256": "0f28fb640e1f36fad79d0d35a6c336065327ac5561f978a3a3042211c27b2152",
+      "description": "Precise release/current provenance, isolation and source compatibility review."
+    },
+    {
+      "path": "coverage/released-functions.json",
+      "sha256": "9ed6afcaa8af2d37beb530c7538264ff49fb2320c0c64317e586b40a60b413de",
+      "description": "Complete actual worker-filtered duckdb_functions() export; empty physical-table result retained."
+    },
+    {
+      "path": "coverage/released-tables.json",
+      "sha256": "0eedd18ea0ead76330f71fc34c2f73e565ceeae71b091298aaa5b68da04c1f94",
+      "description": "Complete actual worker-filtered duckdb_tables() export; empty physical-table result retained."
+    },
+    {
+      "path": "coverage/released-views.json",
+      "sha256": "d9bc9640d0daad19efd9ec652f11fcc071029a6fb7b9197e53acc7601de0e0ff",
+      "description": "Complete actual worker-filtered duckdb_views() export; empty physical-table result retained."
+    },
+    {
+      "path": "coverage/released-database.json",
+      "sha256": "79689941015425ad4886000dbd02365cea8341477e25b0095cdcf7985678c95b",
+      "description": "Actual released catalog title, subtitle, description and metadata."
+    }
+  ],
+  "objects": [
+    {
+      "schema": "main",
+      "name": "evtx_records",
+      "kind": "function",
+      "signatures": [
+        "evtx_records(BLOB) -> TABLE(record_id BIGINT, event_id INTEGER, provider VARCHAR, channel VARCHAR, computer VARCHAR, level INTEGER, time_created TIMESTAMP, event_json VARCHAR)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "evtx_records",
+      "kind": "function",
+      "signatures": [
+        "evtx_records(VARCHAR) -> TABLE(record_id BIGINT, event_id INTEGER, provider VARCHAR, channel VARCHAR, computer VARCHAR, level INTEGER, time_created TIMESTAMP, event_json VARCHAR)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "evtx_record_count",
+      "kind": "function",
+      "signatures": [
+        "evtx_record_count(ANY) -> BIGINT"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_valid_evtx",
+      "kind": "function",
+      "signatures": [
+        "is_valid_evtx(ANY) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "windows_event_id_reference",
+      "kind": "table",
+      "signatures": [
+        "VIEW(event_id INTEGER, channel VARCHAR, name VARCHAR, dfir_use VARCHAR)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    }
+  ]
+}

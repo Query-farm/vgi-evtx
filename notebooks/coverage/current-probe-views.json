@@ -1,0 +1,44 @@
+{
+  "query": "SELECT * FROM duckdb_views() WHERE database_name='evtx'",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "schema_name",
+    "schema_oid",
+    "view_name",
+    "view_oid",
+    "comment",
+    "tags",
+    "internal",
+    "temporary",
+    "column_count",
+    "sql",
+    "is_bound"
+  ],
+  "rows": [
+    [
+      "evtx",
+      22592,
+      "main",
+      22790,
+      "windows_event_id_reference",
+      22791,
+      "Curated registry of well-known Windows Event IDs (Security, System, Sysmon, PowerShell) with a short name and DFIR relevance note; browsable and joinable onto evtx_records.event_id.",
+      {
+        "domain": "security",
+        "topic": "windows-event-log",
+        "vgi.category": "Reference Data",
+        "vgi.doc_llm": "A curated, browsable registry of well-known Windows Event IDs and what they mean for digital-forensics and incident-response work. Columns: event_id (`INTEGER`), channel (`VARCHAR`), name (short label), dfir_use (why it matters). Scan it to discover which event ids to look for, or LEFT JOIN it onto evtx_records.event_id to label parsed records with human-readable meanings. It is static reference data — no .evtx input and no network access.",
+        "vgi.doc_md": "## windows_event_id_reference\n\nA curated lookup of well-known Windows Event IDs (Security auditing, the System service-control log, Sysmon, and PowerShell script-block logging) with a short name and a DFIR relevance note for each. Browse it to learn which ids matter — for example 4624 (successful logon), 4625 (failed logon), 4688 (process creation), or 7045 (service installed) — or join it onto parsed records by `event_id` to turn a raw timeline into a readable one. It is static data: it needs no `.evtx` file and touches no network.",
+        "vgi.example_queries": "[\n  {\n    \"description\": \"Look up the meaning and DFIR relevance of a single Windows event id.\",\n    \"sql\": \"SELECT name, dfir_use FROM evtx.main.windows_event_id_reference WHERE event_id = 4688\"\n  },\n  {\n    \"description\": \"List the curated Security-channel event ids in numeric order.\",\n    \"sql\": \"SELECT event_id, name FROM evtx.main.windows_event_id_reference WHERE channel = 'Security' ORDER BY event_id\"\n  },\n  {\n    \"description\": \"Hunt failed logons and lockouts: select the event ids from the reference by name, then pull the targeted account and source IP address out of each matching record's event_json.\",\n    \"sql\": \"SELECT r.record_id, r.time_created, ref.name, r.event_json->>'$.Event.EventData.TargetUserName' AS target_user, r.event_json->>'$.Event.EventData.IpAddress' AS source_ip FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r JOIN evtx.main.windows_event_id_reference AS ref ON ref.event_id = r.event_id AND ref.channel = r.channel WHERE ref.name IN ('Failed logon', 'Account locked out') ORDER BY r.time_created, r.record_id;\"\n  }\n]",
+        "vgi.keywords": "[\"event id reference\",\"windows event id\",\"event id lookup\",\"4624\",\"4625\",\"4688\",\"sysmon\",\"security log\",\"dfir\",\"reference\"]",
+        "vgi.title": "Event ID Lookup"
+      },
+      false,
+      false,
+      null,
+      "CREATE VIEW windows_event_id_reference AS SELECT * FROM (SELECT * FROM (VALUES (CAST(1102 AS INTEGER), 'Security', 'Audit log cleared', 'Anti-forensics signal: the Security event log was cleared.'), (CAST(4624 AS INTEGER), 'Security', 'Successful logon', 'Baseline authentication event; the logon type distinguishes interactive, network, and remote-desktop sessions.'), (CAST(4625 AS INTEGER), 'Security', 'Failed logon', 'Failed authentication; bursts indicate password spraying or brute force.'), (CAST(4634 AS INTEGER), 'Security', 'Logoff', 'Session teardown; pairs with 4624 to bound a session.'), (CAST(4648 AS INTEGER), 'Security', 'Explicit-credential logon', 'A logon that supplied explicit credentials (runas); common in lateral movement.'), (CAST(4672 AS INTEGER), 'Security', 'Special privileges assigned', 'Administrator-equivalent privileges granted at logon.'), (CAST(4688 AS INTEGER), 'Security', 'Process creation', 'A new process started; the command line is the core hunting field when command-line auditing is on.'), (CAST(4720 AS INTEGER), 'Security', 'User account created', 'A new local or domain account was created; watch for unexpected accounts.'), (CAST(4726 AS INTEGER), 'Security', 'User account deleted', 'An account was removed; can mask attacker cleanup.'), (CAST(4740 AS INTEGER), 'Security', 'Account locked out', 'Repeated bad passwords tripped the account lockout threshold.'), (CAST(4768 AS INTEGER), 'Security', 'Kerberos TGT requested', 'A ticket-granting ticket was issued; the start of a Kerberos session.'), (CAST(4769 AS INTEGER), 'Security', 'Kerberos service ticket requested', 'A service ticket was issued; anomalies underpin Kerberoasting detection.'), (CAST(7045 AS INTEGER), 'System', 'Service installed', 'A new Windows service was installed; a classic persistence and lateral-movement technique.'), (CAST(1 AS INTEGER), 'Microsoft-Windows-Sysmon/Operational', 'Sysmon process creation', 'Sysmon process-creation event with image hashes and parent lineage.'), (CAST(3 AS INTEGER), 'Microsoft-Windows-Sysmon/Operational', 'Sysmon network connection', 'Sysmon network connection with process attribution.'), (CAST(11 AS INTEGER), 'Microsoft-Windows-Sysmon/Operational', 'Sysmon file created', 'Sysmon file-creation event; useful for dropper and staging detection.'), (CAST(13 AS INTEGER), 'Microsoft-Windows-Sysmon/Operational', 'Sysmon registry value set', 'Sysmon registry modification; underpins autorun and persistence hunts.'), (CAST(4104 AS INTEGER), 'Microsoft-Windows-PowerShell/Operational', 'PowerShell script block', 'Script-block logging captures deobfuscated PowerShell; key for fileless-attack analysis.')) AS valueslist) AS \"ref\"(event_id, channel, \"name\", dfir_use);",
+      false
+    ]
+  ]
+}

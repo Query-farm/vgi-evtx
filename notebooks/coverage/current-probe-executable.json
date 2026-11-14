@@ -1,0 +1,5 @@
+{
+  "path": "Pre-existing local evtx-worker (outside published notebook directory)",
+  "sha256": "557d0802adcb53d94f0bb1f05a9fb51d08d3c39e67100cf560438346d9a8d07f",
+  "provenance": "Pre-existing local binary; no source build performed in this notebook migration. Binary catalog cross-check is supplementary; current interface certification also inspects every registration at public main. Notebook runtime exclusively published release."
+}

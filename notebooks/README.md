@@ -1,34 +1,43 @@
-# EVTX notebooks
+# Windows Event Log Parser examples
 
-[01 · Keep unlabeled events when summarizing an EVTX timeline](01_keep_unlabeled_events_in_the_timeline.ipynb) distinguishes input states, parses a public seven-record Windows Security sample, and preserves records missing from the worker's reference table. The experiment changes display bins from 10 to 30 seconds.
+[01 · Keep unlabeled events when summarizing an EVTX timeline](01_keep_unlabeled_events_in_the_timeline.ipynb) distinguishes malformed, absent and missing inputs, parses a public seven-record Security-log sample, and preserves records missing from the worker's reference view. The experiment changes display bins from 10 to 30 seconds.
 
-## Run
+[Open in Colab](https://colab.research.google.com/github/Query-farm/vgi-evtx/blob/main/notebooks/01_keep_unlabeled_events_in_the_timeline.ipynb) and run the install cell, then Run All. A single downloaded notebook works too: shared `prepare("evtx")` retrieves and verifies the public fixture and attribution at immutable commit `6b3aad7d9c4426ff1afaf16d4a43809343908e9d`. No Windows machine, private logs, Rust build, worker checkout or account is needed. Actual hosted Colab execution has not been tested; a fresh Python 3.12 notebook-only run with compatible libraries already imported verifies the bootstrap and preservation behavior.
 
-Requirements: [uv](https://docs.astral.sh/uv/), Python 3.13+ (uv can install it), and internet access for the first dependency/native-worker download. No Windows machine, private logs, Rust build or surrounding worker checkout is needed.
+## Run locally
 
-```sh
-cd notebooks
-uv sync --locked
-uv run --locked python execute.py --timeout 300
-```
-
-The locked environment uses Haybarn 2.0.0rc11. Visible SQL attaches `github-auto://Query-farm/vgi-evtx@v0.4.0`, release commit `3024d7503fdcfed1f7c00a97f56cf9fe3a57284d`. VGI downloads the platform-native binary, verifies the published SHA-256 and caches it. The parser itself reads local fixture bytes without calling a remote service. Upgrade the release deliberately and rerun defaults and the experiment.
-
-Optional editor kernel:
+Requirements: [uv](https://docs.astral.sh/uv/), Python 3.11+ (uv can install it), and internet access for initial package/native-worker downloads. Run from this directory:
 
 ```sh
-uv run --locked python -m ipykernel install --user --name vgi-evtx-notebooks --display-name "Python (vgi-evtx notebooks)"
+uv sync --locked --extra runner
+uv run --locked --extra runner vgi-notebooks
 ```
 
-Use this directory as working directory, then Restart Kernel → Run All. The runner creates a temporary kernel registration and replaces saved outputs only on complete success.
+The notebook uses shared [VGI example tools v0.3.11](https://github.com/Query-farm/vgi-example-notebooks/tree/v0.3.11) for branding, the SVG theme, credential-isolated SQL setup and the atomic runner. Colab installs only the core; `[runner]` adds local execution dependencies. `connect(globals())` creates an in-memory Haybarn database with empty temporary SQL-secret storage and persistence disabled; cleanup closes the connection and removes that storage.
+
+Visible SQL attaches `github-auto://Query-farm/vgi-evtx@v0.4.0`, release commit `3024d7503fdcfed1f7c00a97f56cf9fe3a57284d`, through Haybarn 2.0.0rc11. VGI downloads the platform-native binary, verifies the published SHA-256 and caches it. The parser reads local fixture bytes without contacting a service. Upgrade the release deliberately and rerun the example and experiment.
+
+The shared runner replaces the saved notebook only after successful execution. Defaults retain native SVG MIME and content-addressed `charts/` assets with ordinary GitHub image links; optional local SVG/PNG review exports go under ignored `artifacts/review/`. Existing saved outputs can be read directly on GitHub.
+
+Optional local kernel:
+
+```sh
+uv run --locked --extra runner python -m ipykernel install --user --name vgi-evtx-notebooks --display-name "Python (vgi-evtx notebooks)"
+```
 
 ## Separate experiment
 
 ```sh
-uv run --locked python execute.py --parameters '{"BIN_SECONDS":30}' --output-dir artifacts/bin-30
+uv run --locked --extra runner vgi-notebooks --parameters '{"BIN_SECONDS":30}' --output-dir artifacts/bin-30
 ```
 
-Overrides require a separate destination. Branding, fixture, docs, runner and environment files accompany the copy. Restore 10 for defaults. Generated artifacts, charts and virtual environments are ignored.
+Overrides require a separate destination and never replace the default. Experiment copies include the fixture, attribution, docs and environment files. Bins change from four to two, with the largest bin growing from four to five records; the seven underlying events and one reference-labeled record stay fixed. A wider count bin is not an event-rate estimate. Restore 10 for the default.
+
+## Coverage and evidence
+
+The actual v0.4.0 catalog contains **four logical (schema, name) surfaces**: `evtx_record_count`, `is_valid_evtx`, `evtx_records` and the `windows_event_id_reference` view. The two `evtx_records` overloads count once. All four have visible executed SQL, interpreted results and mappings in [coverage.json](coverage.json), with complete function/table/view exports and a successful raw-JSON execution receipt under [coverage/](coverage/).
+
+Current public main at `6b3aad7d9c4426ff1afaf16d4a43809343908e9d` registers the same four surfaces and signatures. The release-to-main source changes add metadata/examples, not parser behavior or reference values. Current-interface coverage is explicitly compatibility-reviewed against the release: **4/4 released, 4/4 current interface; four exact released-runtime examples, zero exact current-runtime examples**. A supplementary probe of the pre-existing local binary agrees, but its build provenance is not asserted. No source rebuild or test rerun is needed for this notebook-only migration; the existing successful CI run [43567283707](https://github.com/Query-farm/vgi-evtx/actions/runs/43567283707) and the previous rollout's source/metadata results remain the baseline.
 
 ## Fixture and interpretation
 

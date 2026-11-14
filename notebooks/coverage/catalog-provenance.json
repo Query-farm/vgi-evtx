@@ -1,0 +1,11 @@
+{
+  "repository": "Query-farm/vgi-evtx",
+  "release_tag": "v0.4.0",
+  "release_revision": "3024d7503fdcfed1f7c00a97f56cf9fe3a57284d",
+  "current_public_revision": "6b3aad7d9c4426ff1afaf16d4a43809343908e9d",
+  "engine": "Haybarn 2.0.0rc11 / VGI e75482339d",
+  "released_launch": "github-auto://Query-farm/vgi-evtx@v0.4.0",
+  "comparison": "Current public main 6b3aad7d9c4426ff1afaf16d4a43809343908e9d adds documentation and composed examples after v0.4.0. Exhaustive registration review found the same two scalars, one BLOB/VARCHAR-overloaded table function and one native view; no additional schemas/macros/physical tables/authentication/write surfaces. Parsing, signatures, reference values and root dependencies are unchanged. Notebook SQL executes only the published v0.4.0 runtime; current interface coverage is a compatibility review, not execution of current-main source. A supplementary existing-binary catalog probe agrees, but its build provenance is not asserted.",
+  "data_isolation": "Empty temporary SQL secret_directory with allow_persistent_secrets=False; only attributed public local sample and clearly constructed negative controls.",
+  "captured_at": "2026-11-14T19:43:43.952260+00:00"
+}

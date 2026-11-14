@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "catalogs": {
+    "released": {
+      "path": "coverage/catalog-released.json",
+      "sha256": "41d58410eec61498d74156a0d5c19c37f6e5772ad2688d4d4a196b5ed7fd9e23",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T19:43:43.952260+00:00",
+        "catalog_sha256": "41d58410eec61498d74156a0d5c19c37f6e5772ad2688d4d4a196b5ed7fd9e23",
+        "notes": "All four logical surfaces included; table overloads deduplicated, native view included despite empty duckdb_tables(). Current public main 6b3aad7d9c4426ff1afaf16d4a43809343908e9d adds documentation and composed examples after v0.4.0. Exhaustive registration review found the same two scalars, one BLOB/VARCHAR-overloaded table function and one native view; no additional schemas/macros/physical tables/authentication/write surfaces. Parsing, signatures, reference values and root dependencies are unchanged. Notebook SQL executes only the published v0.4.0 runtime; current interface coverage is a compatibility review, not execution of current-main source. A supplementary existing-binary catalog probe agrees, but its build provenance is not asserted."
+      }
+    },
+    "current": {
+      "path": "coverage/catalog-current.json",
+      "sha256": "399053c7cc24d44b453dff6fa3059024648ae39ac61859cbf272c5659aae46c3",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T19:43:43.952260+00:00",
+        "catalog_sha256": "399053c7cc24d44b453dff6fa3059024648ae39ac61859cbf272c5659aae46c3",
+        "notes": "All four logical surfaces included; table overloads deduplicated, native view included despite empty duckdb_tables(). Current public main 6b3aad7d9c4426ff1afaf16d4a43809343908e9d adds documentation and composed examples after v0.4.0. Exhaustive registration review found the same two scalars, one BLOB/VARCHAR-overloaded table function and one native view; no additional schemas/macros/physical tables/authentication/write surfaces. Parsing, signatures, reference values and root dependencies are unchanged. Notebook SQL executes only the published v0.4.0 runtime; current interface coverage is a compatibility review, not execution of current-main source. A supplementary existing-binary catalog probe agrees, but its build provenance is not asserted."
+      }
+    }
+  },
+  "notebooks": [
+    {
+      "path": "01_keep_unlabeled_events_in_the_timeline.ipynb",
+      "sha256": "6bcd51d3f573d796e047716458d3111d448c20f6c9a07f432e5e5067c214ee0b",
+      "execution": {
+        "path": "coverage/run-01.json",
+        "sha256": "327685b6e1f772529881a1e87870e92820d250d27fe5f22473c0d8522df35dbd"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "object": {
+        "schema": "main",
+        "name": "is_valid_evtx"
+      },
+      "notebook": "01_keep_unlabeled_events_in_the_timeline.ipynb",
+      "sql": [
+        {
+          "cell": "baefd60e",
+          "reference": "evtx.main.is_valid_evtx"
+        }
+      ],
+      "narrative_cells": [
+        "1cec7395"
+      ],
+      "result_cells": [
+        "aa703c5e"
+      ],
+      "interpretation_cells": [
+        "aa703c5e"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T19:43:43.952260+00:00",
+        "notebook_sha256": "6bcd51d3f573d796e047716458d3111d448c20f6c9a07f432e5e5067c214ee0b",
+        "catalog_sha256": [
+          "41d58410eec61498d74156a0d5c19c37f6e5772ad2688d4d4a196b5ed7fd9e23",
+          "399053c7cc24d44b453dff6fa3059024648ae39ac61859cbf272c5659aae46c3"
+        ],
+        "purpose": "Distinguish a parseable public file from malformed bytes, absent paths and missing input before summarizing event evidence.",
+        "finding": "The public fixture constructs a parser; malformed bytes return false. Absent paths and SQL NULL both yield NULL. Header validity does not establish authenticity, intact records or complete collection."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "evtx_record_count"
+      },
+      "notebook": "01_keep_unlabeled_events_in_the_timeline.ipynb",
+      "sql": [
+        {
+          "cell": "baefd60e",
+          "reference": "evtx.main.evtx_record_count"
+        }
+      ],
+      "narrative_cells": [
+        "1cec7395"
+      ],
+      "result_cells": [
+        "aa703c5e",
+        "d966b780",
+        "invariant-result"
+      ],
+      "interpretation_cells": [
+        "d966b780"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T19:43:43.952260+00:00",
+        "notebook_sha256": "6bcd51d3f573d796e047716458d3111d448c20f6c9a07f432e5e5067c214ee0b",
+        "catalog_sha256": [
+          "41d58410eec61498d74156a0d5c19c37f6e5772ad2688d4d4a196b5ed7fd9e23",
+          "399053c7cc24d44b453dff6fa3059024648ae39ac61859cbf272c5659aae46c3"
+        ],
+        "purpose": "Cross-check the scalar parsed-record total against the materialized event rows while separating zero from missing evidence.",
+        "finding": "The scalar reports seven records and agrees with the table count. Deliberate malformed bytes yield zero while absent and missing inputs yield NULL; agreement is internal consistency, not acquisition completeness."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "evtx_records"
+      },
+      "notebook": "01_keep_unlabeled_events_in_the_timeline.ipynb",
+      "sql": [
+        {
+          "cell": "18ed3c98",
+          "reference": "evtx.main.evtx_records"
+        }
+      ],
+      "narrative_cells": [
+        "4322e7cb"
+      ],
+      "result_cells": [
+        "d966b780",
+        "5229bf81",
+        "f03a495e"
+      ],
+      "interpretation_cells": [
+        "f03a495e"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T19:43:43.952260+00:00",
+        "notebook_sha256": "6bcd51d3f573d796e047716458d3111d448c20f6c9a07f432e5e5067c214ee0b",
+        "catalog_sha256": [
+          "41d58410eec61498d74156a0d5c19c37f6e5772ad2688d4d4a196b5ed7fd9e23",
+          "399053c7cc24d44b453dff6fa3059024648ae39ac61859cbf272c5659aae46c3"
+        ],
+        "purpose": "Build a UTC event timeline once and test whether changing display bins changes underlying evidence.",
+        "finding": "Seven records span roughly 34 seconds. Four 10-second bins retain all seven and have a largest count of four; changing width to 30 gives two bins with a largest count of five. Per-event evidence remains fixed; counts are not production event rates."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "windows_event_id_reference"
+      },
+      "notebook": "01_keep_unlabeled_events_in_the_timeline.ipynb",
+      "sql": [
+        {
+          "cell": "18ed3c98",
+          "reference": "evtx.main.windows_event_id_reference"
+        }
+      ],
+      "narrative_cells": [
+        "e1803075"
+      ],
+      "result_cells": [
+        "5229bf81",
+        "invariant-result"
+      ],
+      "interpretation_cells": [
+        "5229bf81"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T19:43:43.952260+00:00",
+        "notebook_sha256": "6bcd51d3f573d796e047716458d3111d448c20f6c9a07f432e5e5067c214ee0b",
+        "catalog_sha256": [
+          "41d58410eec61498d74156a0d5c19c37f6e5772ad2688d4d4a196b5ed7fd9e23",
+          "399053c7cc24d44b453dff6fa3059024648ae39ac61859cbf272c5659aae46c3"
+        ],
+        "purpose": "Label events without dropping records missing from a deliberately limited provider/channel reference.",
+        "finding": "A checked left join labels only one of seven events (Security event 4625, Failed logon), preserving six unlabeled records. Unique reference keys and matching provider/channel prevent unintended multiplication or cross-provider interpretation; a label alone is not an attack determination."
+      }
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "repository": "Query-farm/vgi-evtx",
+  "revision": "6b3aad7d9c4426ff1afaf16d4a43809343908e9d",
+  "captured_at": "2026-11-14T19:43:43.952260+00:00",
+  "default_schema": "main",
+  "scope": "all_public_functions_and_tables",
+  "complete": true,
+  "evidence": [
+    {
+      "path": "coverage/catalog-provenance.json",
+      "sha256": "0f28fb640e1f36fad79d0d35a6c336065327ac5561f978a3a3042211c27b2152",
+      "description": "Precise release/current provenance, isolation and source compatibility review."
+    },
+    {
+      "path": "coverage/current-source-registration.json",
+      "sha256": "52383df6d82dcafe6b4334af9e505ffc07e69caa03ed9a65a0487896cc239ee6",
+      "description": "Full current registration and catalog-view declarations, immutable source links/hashes and complete release-to-current source diff. No current source build claimed."
+    }
+  ],
+  "objects": [
+    {
+      "schema": "main",
+      "name": "evtx_records",
+      "kind": "function",
+      "signatures": [
+        "evtx_records(BLOB) -> TABLE(record_id BIGINT, event_id INTEGER, provider VARCHAR, channel VARCHAR, computer VARCHAR, level INTEGER, time_created TIMESTAMP, event_json VARCHAR)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "evtx_records",
+      "kind": "function",
+      "signatures": [
+        "evtx_records(VARCHAR) -> TABLE(record_id BIGINT, event_id INTEGER, provider VARCHAR, channel VARCHAR, computer VARCHAR, level INTEGER, time_created TIMESTAMP, event_json VARCHAR)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "evtx_record_count",
+      "kind": "function",
+      "signatures": [
+        "evtx_record_count(ANY) -> BIGINT"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_valid_evtx",
+      "kind": "function",
+      "signatures": [
+        "is_valid_evtx(ANY) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "windows_event_id_reference",
+      "kind": "table",
+      "signatures": [
+        "VIEW(event_id INTEGER, channel VARCHAR, name VARCHAR, dfir_use VARCHAR)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    }
+  ]
+}
