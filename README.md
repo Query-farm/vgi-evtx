@@ -169,3 +169,7 @@ Written by [Query.Farm](https://query.farm).
 
 Copyright 2026 Query Farm LLC - https://query.farm
 
+
+## Notebooks
+
+[Executed EVTX timeline walkthrough](notebooks/README.md) preserves unlabeled events and tests a different time-bin width using the bundled public sample.
