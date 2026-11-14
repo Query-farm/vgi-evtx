@@ -121,6 +121,13 @@ impl ScalarFunction for EvtxRecordCount {
 // is_valid_evtx(input) -> BOOLEAN
 // ---------------------------------------------------------------------------
 
+/// VGI515 described single-object examples for `is_valid_evtx`, byte-identical
+/// to the native `examples`; the composed folder triage is appended after them.
+const IS_VALID_EXAMPLE_QUERIES: &str = r#"[
+  {"description": "Check whether a file's bytes are a parseable .evtx before processing.", "sql": "SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));"},
+  {"description": "Non-evtx bytes are reported as not valid (false), not an error.", "sql": "SELECT evtx.main.is_valid_evtx('not a real evtx'::BLOB) AS valid;"}
+]"#;
+
 pub struct IsValidEvtx;
 
 impl ScalarFunction for IsValidEvtx {
@@ -150,6 +157,7 @@ impl ScalarFunction for IsValidEvtx {
                         .into(),
                     expected_output: None,
                 },
+                crate::examples::TRIAGE_FOLDER.native(),
             ],
             tags: {
                 let mut tags = crate::meta::object_tags(
@@ -173,14 +181,14 @@ impl ScalarFunction for IsValidEvtx {
                         "dfir",
                     ],
                 );
-                // VGI515: described example list, byte-identical to native examples.
                 tags.push((
                     "vgi.example_queries".into(),
-                    r#"[
-  {"description": "Check whether a file's bytes are a parseable .evtx before processing.", "sql": "SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));"},
-  {"description": "Non-evtx bytes are reported as not valid (false), not an error.", "sql": "SELECT evtx.main.is_valid_evtx('not a real evtx'::BLOB) AS valid;"}
-]"#
-                    .into(),
+                    crate::examples::insert_into(
+                        IS_VALID_EXAMPLE_QUERIES,
+                        usize::MAX,
+                        // Composed folder triage (is_valid_evtx + evtx_record_count).
+                        &[&crate::examples::TRIAGE_FOLDER],
+                    ),
                 ));
                 tags
             },

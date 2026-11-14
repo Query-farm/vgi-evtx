@@ -119,16 +119,19 @@ impl TableFunction for EvtxRecords {
             description: "Parse a .evtx file (BLOB bytes or VARCHAR path) into one row per event \
                           record; event_json carries the full normalized event JSON"
                 .into(),
-            examples: vec![FunctionExample {
-                sql: "SELECT record_id, event_id, provider, time_created \
+            examples: vec![
+                FunctionExample {
+                    sql: "SELECT record_id, event_id, provider, time_created \
                       FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') \
                       ORDER BY record_id;"
-                    .into(),
-                description: "Explode a .evtx file at the given path into one row per event \
+                        .into(),
+                    description: "Explode a .evtx file at the given path into one row per event \
                               record, ordered by record id."
-                    .into(),
-                expected_output: None,
-            }],
+                        .into(),
+                    expected_output: None,
+                },
+                crate::examples::LABEL_TIMELINE.native(),
+            ],
             tags: {
                 let mut tags = crate::meta::object_tags(
                     "Explode EVTX File into Event Rows",
@@ -161,7 +164,16 @@ impl TableFunction for EvtxRecords {
                     "vgi.result_columns_schema".into(),
                     RESULT_COLUMNS_SCHEMA.into(),
                 ));
-                tags.push(("vgi.example_queries".into(), EXAMPLE_QUERIES.into()));
+                // The composed timeline-labelling example (evtx_records LEFT JOIN the
+                // event id reference) follows the native one, within the first five.
+                tags.push((
+                    "vgi.example_queries".into(),
+                    crate::examples::insert_into(
+                        EXAMPLE_QUERIES,
+                        1,
+                        &[&crate::examples::LABEL_TIMELINE],
+                    ),
+                ));
                 tags.push(("vgi.executable_examples".into(), EXECUTABLE_EXAMPLES.into()));
                 tags
             },

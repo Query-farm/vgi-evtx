@@ -21,10 +21,11 @@ crates/evtx-worker/
   src/main.rs                       Worker::new(); registers scalars + table fn
   src/evtx_parse.rs                 PURE logic (no Arrow): parse_records / record_count / is_valid + unit tests
   src/arrow_io.rs                   BLOB-or-VARCHAR-path input reads + in-process scalar test harness
+  src/examples.rs                   composed example SQL (defined once; schema + driving-object lists)
   src/scalar/{inspect,mod}.rs         thin Arrow scalar adapters (evtx_record_count, is_valid_evtx)
   src/table/{evtx_records,mod}.rs   thin Arrow table-producer adapter (8 typed columns incl. TIMESTAMP)
   tests/parse.rs                    integration tests (include evtx_parse.rs by #[path], like vgi-ioc)
-test/sql/*.test                     haybarn-unittest sqllogictest — authoritative E2E
+test/sql/*.test                     haybarn-unittest sqllogictest — authoritative E2E (compose.test pins composed examples + graders)
 test/sql/data/sample-security.evtx  clean 68 KB fixture (+ README.md attribution)
 Makefile                            test / test-unit / test-sql / lint / fmt / build / clean
 ```

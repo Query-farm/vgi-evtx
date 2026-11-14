@@ -30,3 +30,10 @@ tasks:
   - name: security_reference_count
     reference_sql: "SELECT count(*) FROM evtx.main.windows_event_id_reference WHERE channel = 'Security';"
     ignore_column_names: true
+  - name: uncatalogued_record_count
+    reference_sql: "SELECT count(*) FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r WHERE NOT EXISTS (SELECT 1 FROM evtx.main.windows_event_id_reference AS ref WHERE ref.event_id = r.event_id AND ref.channel = r.channel);"
+    ignore_column_names: true
+  - name: catalogued_event_names
+    reference_sql: "SELECT ref.name, count(*) FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r JOIN evtx.main.windows_event_id_reference AS ref ON ref.event_id = r.event_id AND ref.channel = r.channel GROUP BY ref.name;"
+    unordered: true
+    ignore_column_names: true

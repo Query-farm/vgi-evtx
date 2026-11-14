@@ -9,9 +9,10 @@
 //! ATTACH 'evtx' (TYPE vgi, LOCATION './target/release/evtx-worker');
 //! SET search_path = 'evtx.main';
 //!
-//! -- One row per event record (input: BLOB bytes or a VARCHAR path).
+//! -- One row per event record (input: a VARCHAR path or a constant BLOB;
+//! -- table-function arguments cannot be subqueries).
 //! SELECT record_id, event_id, provider, time_created
-//! FROM evtx_records((SELECT content FROM read_blob('Security.evtx')))
+//! FROM evtx_records('Security.evtx')
 //! ORDER BY record_id;
 //!
 //! SELECT evtx_record_count((SELECT content FROM read_blob('Security.evtx')));
@@ -29,6 +30,7 @@
 
 mod arrow_io;
 mod evtx_parse;
+mod examples;
 mod meta;
 mod scalar;
 mod table;
@@ -79,6 +81,15 @@ const EVENT_ID_REFERENCE_EXAMPLES: &str = r#"[
   }
 ]"#;
 
+/// VGI506/VGI515 single-object example queries for the `main` schema; the
+/// composed examples from `examples.rs` are appended after these.
+const SCHEMA_EXAMPLES: &str = r#"[
+  {"description": "Validate that a file's bytes are a parseable .evtx before loading it.", "sql": "SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));"},
+  {"description": "Count how many event records a .evtx file contains.", "sql": "SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('Security.evtx')));"},
+  {"description": "Explode a .evtx file into one row per event record, ordered by record id.", "sql": "SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records('Security.evtx') ORDER BY record_id;"},
+  {"description": "Rank event ids by how often they occur to surface the noisiest activity.", "sql": "SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('Security.evtx') GROUP BY event_id ORDER BY n DESC;"}
+]"#;
+
 /// Build the `windows_event_id_reference` view (VGI146 browsable entry point).
 fn event_id_reference_view() -> CatView {
     let mut tags = meta::object_tags(
@@ -115,7 +126,13 @@ fn event_id_reference_view() -> CatView {
     tags.push(("topic".to_string(), "windows-event-log".to_string()));
     tags.push((
         "vgi.example_queries".to_string(),
-        EVENT_ID_REFERENCE_EXAMPLES.to_string(),
+        // The reference picks which events to hunt, so the failed-logon hunt
+        // (reference JOIN evtx_records) rides this view's first five examples.
+        examples::insert_into(
+            EVENT_ID_REFERENCE_EXAMPLES,
+            2,
+            &[&examples::FAILED_LOGON_HUNT],
+        ),
     ));
     CatView {
         name: "windows_event_id_reference".to_string(),
@@ -318,6 +335,23 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                         "prompt": "Using the evtx worker's built-in Windows Event ID reference \
                                    data, what is the short name for event id 4688?",
                     }),
+                    // Composed tasks: evtx_records joined to the reference view.
+                    serde_json::json!({
+                        "name": "uncatalogued_record_count",
+                        "prompt": "How many event records in the log at the path \
+                                   'test/sql/data/sample-security.evtx' have an event id that \
+                                   the evtx worker's Windows Event ID reference does NOT \
+                                   catalogue? Return a single number.",
+                    }),
+                    serde_json::json!({
+                        "name": "catalogued_event_names",
+                        "prompt": "Parse the log at the path \
+                                   'test/sql/data/sample-security.evtx' with the evtx worker and \
+                                   use its Windows Event ID reference to name the events. Return \
+                                   two columns: the reference's short event name, and how many \
+                                   records in the log have that event — one row per name, only \
+                                   for events the reference catalogues.",
+                    }),
                     serde_json::json!({
                         "name": "security_reference_count",
                         "prompt": "Using the evtx worker's Windows Event ID reference, how many \
@@ -370,13 +404,9 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                 // description).
                 (
                     "vgi.example_queries".to_string(),
-                    r#"[
-  {"description": "Validate that a file's bytes are a parseable .evtx before loading it.", "sql": "SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));"},
-  {"description": "Count how many event records a .evtx file contains.", "sql": "SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('Security.evtx')));"},
-  {"description": "Explode a .evtx file into one row per event record, ordered by record id.", "sql": "SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records('Security.evtx') ORDER BY record_id;"},
-  {"description": "Rank event ids by how often they occur to surface the noisiest activity.", "sql": "SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('Security.evtx') GROUP BY event_id ORDER BY n DESC;"}
-]"#
-                    .to_string(),
+                    // Single-object examples first, then the composed ones
+                    // (defined once in examples.rs).
+                    examples::insert_into(SCHEMA_EXAMPLES, usize::MAX, &examples::COMPOSED),
                 ),
                 (
                     "vgi.doc_llm".to_string(),

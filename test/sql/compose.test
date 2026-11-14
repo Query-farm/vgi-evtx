@@ -1,0 +1,96 @@
+# name: test/sql/compose.test
+# group: [vgi_evtx]
+#
+# Composed queries that combine several of the worker's objects. Each SQL here is
+# the published composed example (crates/evtx-worker/src/examples.rs), the
+# README labelling query, or an agent-task grader (vgi-agent-tests.yaml), run over
+# the committed fixture so the published descriptions are pinned to real rows.
+
+require-env VGI_EVTX_WORKER
+
+statement ok
+LOAD vgi;
+
+# The failed-logon hunt reads event_json with ->> (json extension).
+statement ok
+INSTALL json;
+
+statement ok
+LOAD json;
+
+statement ok
+ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION '${VGI_EVTX_WORKER}');
+
+# examples::LABEL_TIMELINE — evtx_records LEFT JOIN windows_event_id_reference.
+query IITT
+SELECT r.record_id, r.event_id, ref.name AS meaning, r.time_created FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r LEFT JOIN evtx.main.windows_event_id_reference AS ref ON ref.event_id = r.event_id AND ref.channel = r.channel ORDER BY r.record_id;
+----
+1	5152	NULL	2016-06-29 15:24:34.346
+2	4611	NULL	2016-06-29 15:24:36.686
+3	4776	NULL	2016-06-29 15:24:36.686
+4	4625	Failed logon	2016-06-29 15:24:36.7172
+5	5152	NULL	2016-06-29 15:24:57.0908
+6	5157	NULL	2016-06-29 15:25:08.822
+7	4673	NULL	2016-06-29 15:25:08.822
+
+# examples::FAILED_LOGON_HUNT — reference picks the ids; event_json yields account + IP.
+query ITTTT
+SELECT r.record_id, r.time_created, ref.name, r.event_json->>'$.Event.EventData.TargetUserName' AS target_user, r.event_json->>'$.Event.EventData.IpAddress' AS source_ip FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r JOIN evtx.main.windows_event_id_reference AS ref ON ref.event_id = r.event_id AND ref.channel = r.channel WHERE ref.name IN ('Failed logon', 'Account locked out') ORDER BY r.time_created, r.record_id;
+----
+4	2016-06-29 15:24:36.7172	Failed logon	Administrator	23.94.153.202
+
+# examples::TRIAGE_FOLDER — is_valid_evtx + evtx_record_count over a glob.
+query TTI
+SELECT filename, evtx.main.is_valid_evtx(content) AS valid, evtx.main.evtx_record_count(content) AS records FROM read_blob('test/sql/data/*') ORDER BY filename;
+----
+test/sql/data/README.md	false	0
+test/sql/data/sample-security.evtx	true	7
+
+statement ok
+SET search_path = 'evtx.main';
+
+# README: label via USING (event_id, channel), unqualified names.
+query IIT
+SELECT r.record_id, r.event_id, ref.name AS meaning
+FROM evtx_records('test/sql/data/sample-security.evtx') AS r
+LEFT JOIN windows_event_id_reference AS ref USING (event_id, channel)
+ORDER BY r.record_id;
+----
+1	5152	NULL
+2	4611	NULL
+3	4776	NULL
+4	4625	Failed logon
+5	5152	NULL
+6	5157	NULL
+7	4673	NULL
+
+# README: a constant non-evtx BLOB yields no rows.
+query I
+SELECT count(*) FROM evtx_records('not a real evtx'::BLOB);
+----
+0
+
+# README regression: a subquery argument is rejected by DuckDB's binder (the
+# README used to show this form).
+statement error
+SELECT count(*) FROM evtx_records((SELECT content FROM read_blob('test/sql/data/sample-security.evtx')));
+----
+Table function cannot contain subqueries
+
+# Grader: uncatalogued_record_count.
+query I
+SELECT count(*) FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r WHERE NOT EXISTS (SELECT 1 FROM evtx.main.windows_event_id_reference AS ref WHERE ref.event_id = r.event_id AND ref.channel = r.channel);
+----
+6
+
+# Grader: catalogued_event_names.
+query TI rowsort
+SELECT ref.name, count(*) FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r JOIN evtx.main.windows_event_id_reference AS ref ON ref.event_id = r.event_id AND ref.channel = r.channel GROUP BY ref.name;
+----
+Failed logon	1
+
+statement ok
+USE memory;
+
+statement ok
+DETACH evtx;

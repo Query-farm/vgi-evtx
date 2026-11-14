@@ -24,13 +24,21 @@ LOAD vgi;
 ATTACH 'evtx' (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-evtx@v0.4.0');
 SET search_path = 'evtx.main';
 
--- One row per event record. Input is the .evtx file as a BLOB …
+-- One row per event record. Input is a VARCHAR path to open …
 SELECT record_id, event_id, provider, channel, time_created
-FROM evtx_records((SELECT content FROM read_blob('Security.evtx')))
+FROM evtx_records('Security.evtx')
 ORDER BY record_id;
 
--- … or as a VARCHAR path to open directly.
-SELECT count(*) FROM evtx_records('Security.evtx');
+-- … or a constant BLOB (table-function arguments must be constants, not
+-- subqueries; non-evtx bytes simply yield no rows).
+SELECT count(*) FROM evtx_records('not a real evtx'::BLOB);  -- 0
+
+-- Label each record with the built-in Windows Event ID reference
+-- (meaning is NULL for ids the reference does not catalogue).
+SELECT r.record_id, r.event_id, ref.name AS meaning
+FROM evtx_records('Security.evtx') AS r
+LEFT JOIN windows_event_id_reference AS ref USING (event_id, channel)
+ORDER BY r.record_id;
 
 -- How many records? Is it a real .evtx?
 SELECT evtx_record_count((SELECT content FROM read_blob('Security.evtx')));  -- BIGINT
