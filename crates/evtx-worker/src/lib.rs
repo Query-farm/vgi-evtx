@@ -84,10 +84,10 @@ const EVENT_ID_REFERENCE_EXAMPLES: &str = r#"[
 /// VGI506/VGI515 single-object example queries for the `main` schema; the
 /// composed examples from `examples.rs` are appended after these.
 const SCHEMA_EXAMPLES: &str = r#"[
-  {"description": "Validate that a file's bytes are a parseable .evtx before loading it.", "sql": "SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));"},
-  {"description": "Count how many event records a .evtx file contains.", "sql": "SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('Security.evtx')));"},
-  {"description": "Explode a .evtx file into one row per event record, ordered by record id.", "sql": "SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records('Security.evtx') ORDER BY record_id;"},
-  {"description": "Rank event ids by how often they occur to surface the noisiest activity.", "sql": "SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('Security.evtx') GROUP BY event_id ORDER BY n DESC;"}
+  {"description": "Validate that a file's bytes (a sample Security log fetched by URL) are a parseable .evtx before loading it.", "sql": "SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')));"},
+  {"description": "Count how many event records a .evtx file (a sample Security log fetched by URL) contains.", "sql": "SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')));"},
+  {"description": "Explode a .evtx file into one row per event record, ordered by record id (the sample log's bytes are fetched by URL into a variable, since table-function arguments must be constants).", "sql": "SET VARIABLE evtx_sample = (SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')); SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records(getvariable('evtx_sample')) ORDER BY record_id;"},
+  {"description": "Rank event ids by how often they occur to surface the noisiest activity.", "sql": "SET VARIABLE evtx_sample = (SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')); SELECT event_id, count(*) AS n FROM evtx.main.evtx_records(getvariable('evtx_sample')) GROUP BY event_id ORDER BY n DESC;"}
 ]"#;
 
 /// Build the `windows_event_id_reference` view (VGI146 browsable entry point).

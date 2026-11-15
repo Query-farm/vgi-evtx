@@ -21,31 +21,36 @@ output composes with [`vgi-sigma`](../vgi-sigma)'s
 
 ```sql
 LOAD vgi;
-ATTACH 'evtx' (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-evtx@v0.4.0');
+ATTACH 'evtx' (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-evtx@v0.4.1');
 SET search_path = 'evtx.main';
 
--- One row per event record. Input is a VARCHAR path to open …
+-- A small sample Security log, pinned to a release tag so it resolves anywhere.
+-- Table-function arguments must be constants (not subqueries), so fetch the
+-- bytes into a variable first; a local file can also be passed as a VARCHAR
+-- path, e.g. evtx_records('Security.evtx').
+SET VARIABLE evtx_sample = (SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx'));
+
+-- One row per event record (7 rows for the sample).
 SELECT record_id, event_id, provider, channel, time_created
-FROM evtx_records('Security.evtx')
+FROM evtx_records(getvariable('evtx_sample'))
 ORDER BY record_id;
 
--- … or a constant BLOB (table-function arguments must be constants, not
--- subqueries; non-evtx bytes simply yield no rows).
+-- Non-evtx bytes simply yield no rows.
 SELECT count(*) FROM evtx_records('not a real evtx'::BLOB);  -- 0
 
 -- Label each record with the built-in Windows Event ID reference
 -- (meaning is NULL for ids the reference does not catalogue).
 SELECT r.record_id, r.event_id, ref.name AS meaning
-FROM evtx_records('Security.evtx') AS r
+FROM evtx_records(getvariable('evtx_sample')) AS r
 LEFT JOIN windows_event_id_reference AS ref USING (event_id, channel)
 ORDER BY r.record_id;
 
 -- How many records? Is it a real .evtx?
-SELECT evtx_record_count((SELECT content FROM read_blob('Security.evtx')));  -- BIGINT
-SELECT is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));      -- BOOLEAN
+SELECT evtx_record_count(getvariable('evtx_sample'));  -- 7
+SELECT is_valid_evtx(getvariable('evtx_sample'));      -- true
 
 -- Compose with vgi-sigma over the preserved full event JSON:
---   SELECT * FROM evtx_records('Security.evtx')
+--   SELECT * FROM evtx_records(getvariable('evtx_sample'))
 --   WHERE sigma_match(event_json, '<rule yaml>');
 ```
 
@@ -57,23 +62,23 @@ Every [GitHub release](https://github.com/Query-farm/vgi-evtx/releases) ships a 
 INSTALL vgi FROM community;
 LOAD vgi;
 
-ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-evtx@v0.4.0');
+ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-evtx@v0.4.1');
 
--- Validate that a file's bytes are a parseable .evtx before loading it.
-SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));
+-- Validate that a file's bytes (a sample Security log) are a parseable .evtx.
+SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')));
 
--- Count how many event records a .evtx file contains.
-SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('Security.evtx')));
+-- Count how many event records the sample contains (7).
+SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')));
 ```
 
-Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64). `github-auto://` needs an explicit release tag; change `@v0.4.0` to move to a newer release.
+Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64). `github-auto://` needs an explicit release tag; change `@v0.4.1` to move to a newer release.
 
 ### Other ways to run it
 
 - **Docker** (the image bundles the worker; needs a container runtime):
 
   ```sql
-  ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-evtx:0.4.0');
+  ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-evtx:0.4.1');
   ```
 
 - **Manual download.** Download the archive for your platform from the [releases page](https://github.com/Query-farm/vgi-evtx/releases), verify it against its `.sha256` file (a cosign `.cosign.bundle` is published alongside), unpack it, and set `LOCATION` to the path of the extracted worker executable.

@@ -38,9 +38,9 @@ impl ScalarFunction for EvtxRecordCount {
             examples: vec![
                 FunctionExample {
                     sql: "SELECT evtx.main.evtx_record_count((SELECT content FROM \
-                          read_blob('Security.evtx')));"
+                          read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')));"
                         .into(),
-                    description: "Count the event records in a .evtx file read as a BLOB.".into(),
+                    description: "Count the event records in a sample Security .evtx file read as a BLOB from a URL (7 records).".into(),
                     expected_output: None,
                 },
                 FunctionExample {
@@ -77,7 +77,7 @@ impl ScalarFunction for EvtxRecordCount {
                 tags.push((
                     "vgi.example_queries".into(),
                     r#"[
-  {"description": "Count the event records in a .evtx file read as a BLOB.", "sql": "SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('Security.evtx')));"},
+  {"description": "Count the event records in a sample Security .evtx file read as a BLOB from a URL (7 records).", "sql": "SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')));"},
   {"description": "Non-evtx bytes count as 0 records (hostile input is handled, not an error).", "sql": "SELECT evtx.main.evtx_record_count('not a real evtx'::BLOB) AS records;"}
 ]"#
                     .into(),
@@ -124,7 +124,7 @@ impl ScalarFunction for EvtxRecordCount {
 /// VGI515 described single-object examples for `is_valid_evtx`, byte-identical
 /// to the native `examples`; the composed folder triage is appended after them.
 const IS_VALID_EXAMPLE_QUERIES: &str = r#"[
-  {"description": "Check whether a file's bytes are a parseable .evtx before processing.", "sql": "SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('Security.evtx')));"},
+  {"description": "Check whether a file's bytes (a sample Security log fetched by URL) are a parseable .evtx before processing.", "sql": "SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')));"},
   {"description": "Non-evtx bytes are reported as not valid (false), not an error.", "sql": "SELECT evtx.main.is_valid_evtx('not a real evtx'::BLOB) AS valid;"}
 ]"#;
 
@@ -144,10 +144,10 @@ impl ScalarFunction for IsValidEvtx {
             examples: vec![
                 FunctionExample {
                     sql: "SELECT evtx.main.is_valid_evtx((SELECT content FROM \
-                          read_blob('Security.evtx')));"
+                          read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')));"
                         .into(),
                     description:
-                        "Check whether a file's bytes are a parseable .evtx before processing."
+                        "Check whether a file's bytes (a sample Security log fetched by URL) are a parseable .evtx before processing."
                             .into(),
                     expected_output: None,
                 },

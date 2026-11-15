@@ -5,6 +5,9 @@
 # the published composed example (crates/evtx-worker/src/examples.rs), the
 # README labelling query, or an agent-task grader (vgi-agent-tests.yaml), run over
 # the committed fixture so the published descriptions are pinned to real rows.
+# The published examples read the same fixture through a release-tag-pinned
+# raw.githubusercontent.com URL (so they work for any user); these tests read the
+# on-disk copy so CI stays offline.
 
 require-env VGI_EVTX_WORKER
 

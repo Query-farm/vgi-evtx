@@ -48,8 +48,8 @@ const EXECUTABLE_EXAMPLES: &str = r#"[
 /// VGI515 described example list for `evtx_records`. Byte-identical SQL to the
 /// native `examples` below so the two carriers dedup to the described entry.
 const EXAMPLE_QUERIES: &str = r#"[
-  {"description": "Explode a .evtx file at the given path into one row per event record, ordered by record id.", "sql": "SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') ORDER BY record_id;"},
-  {"description": "Rank event ids by frequency to surface the noisiest activity in a log.", "sql": "SELECT event_id, count(*) AS n FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') GROUP BY event_id ORDER BY n DESC;"}
+  {"description": "Explode a .evtx file into one row per event record, ordered by record id. Table-function arguments must be constants, so the sample log's bytes are fetched by URL into a variable first.", "sql": "SET VARIABLE evtx_sample = (SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')); SELECT record_id, event_id, provider, time_created FROM evtx.main.evtx_records(getvariable('evtx_sample')) ORDER BY record_id;"},
+  {"description": "Rank event ids by frequency to surface the noisiest activity in a log.", "sql": "SET VARIABLE evtx_sample = (SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')); SELECT event_id, count(*) AS n FROM evtx.main.evtx_records(getvariable('evtx_sample')) GROUP BY event_id ORDER BY n DESC;"}
 ]"#;
 
 /// Static result-schema declaration (VGI307/VGI414): the structured replacement
@@ -121,12 +121,14 @@ impl TableFunction for EvtxRecords {
                 .into(),
             examples: vec![
                 FunctionExample {
-                    sql: "SELECT record_id, event_id, provider, time_created \
-                      FROM evtx.main.evtx_records('test/sql/data/sample-security.evtx') \
+                    sql: "SET VARIABLE evtx_sample = (SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')); \
+                      SELECT record_id, event_id, provider, time_created \
+                      FROM evtx.main.evtx_records(getvariable('evtx_sample')) \
                       ORDER BY record_id;"
                         .into(),
-                    description: "Explode a .evtx file at the given path into one row per event \
-                              record, ordered by record id."
+                    description: "Explode a .evtx file into one row per event record, ordered by \
+                              record id. Table-function arguments must be constants, so the \
+                              sample log's bytes are fetched by URL into a variable first."
                         .into(),
                     expected_output: None,
                 },

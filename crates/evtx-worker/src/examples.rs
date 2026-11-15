@@ -5,9 +5,11 @@
 //! Each SQL is defined exactly once here and referenced from (a) the schema-level
 //! `vgi.example_queries` list and (b) the example list of the object that drives
 //! the query, inside its first five entries (the `vgi-lint` agent simulator only
-//! shows agents per-object examples, first five each). Every query runs offline
-//! against the committed fixture `test/sql/data/sample-security.evtx` (paths are
-//! relative to the repo root) and is exercised by `test/sql/compose.test`.
+//! shows agents per-object examples, first five each). Every query reads the
+//! committed fixture `test/sql/data/sample-security.evtx` by a release-tag-pinned
+//! raw.githubusercontent.com URL, so it shows real rows for any user (a relative
+//! path would only resolve inside this repo). `test/sql/compose.test` runs the
+//! same queries offline over the on-disk copy of that fixture.
 
 use vgi::FunctionExample;
 
@@ -23,8 +25,9 @@ pub const LABEL_TIMELINE: Example = Example {
     description: "Label each parsed record with its human-readable meaning by LEFT JOINing the \
                   event id reference onto evtx_records (meaning is NULL for ids the reference \
                   does not catalogue).",
-    sql: "SELECT r.record_id, r.event_id, ref.name AS meaning, r.time_created FROM \
-          evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r LEFT JOIN \
+    sql: "SET VARIABLE evtx_sample = (SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')); \
+          SELECT r.record_id, r.event_id, ref.name AS meaning, r.time_created FROM \
+          evtx.main.evtx_records(getvariable('evtx_sample')) AS r LEFT JOIN \
           evtx.main.windows_event_id_reference AS ref ON ref.event_id = r.event_id AND \
           ref.channel = r.channel ORDER BY r.record_id;",
 };
@@ -35,10 +38,11 @@ pub const FAILED_LOGON_HUNT: Example = Example {
     description: "Hunt failed logons and lockouts: select the event ids from the reference by \
                   name, then pull the targeted account and source IP address out of each \
                   matching record's event_json.",
-    sql: "SELECT r.record_id, r.time_created, ref.name, \
+    sql: "SET VARIABLE evtx_sample = (SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')); \
+          SELECT r.record_id, r.time_created, ref.name, \
           r.event_json->>'$.Event.EventData.TargetUserName' AS target_user, \
           r.event_json->>'$.Event.EventData.IpAddress' AS source_ip FROM \
-          evtx.main.evtx_records('test/sql/data/sample-security.evtx') AS r JOIN \
+          evtx.main.evtx_records(getvariable('evtx_sample')) AS r JOIN \
           evtx.main.windows_event_id_reference AS ref ON ref.event_id = r.event_id AND \
           ref.channel = r.channel WHERE ref.name IN ('Failed logon', 'Account locked out') \
           ORDER BY r.time_created, r.record_id;",
@@ -46,11 +50,13 @@ pub const FAILED_LOGON_HUNT: Example = Example {
 
 /// `is_valid_evtx` + `evtx_record_count` over every file `read_blob` globs.
 pub const TRIAGE_FOLDER: Example = Example {
-    description: "Triage a folder of collected files: flag which ones are parseable .evtx logs \
-                  and how many event records each holds (non-evtx files show valid = false and \
-                  0 records).",
+    description: "Triage a set of collected files (here a sample .evtx and a README fetched by \
+                  URL): flag which ones are parseable .evtx logs and how many event records \
+                  each holds (non-evtx files show valid = false and 0 records).",
     sql: "SELECT filename, evtx.main.is_valid_evtx(content) AS valid, \
-          evtx.main.evtx_record_count(content) AS records FROM read_blob('test/sql/data/*') \
+          evtx.main.evtx_record_count(content) AS records FROM \
+          read_blob(['https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/README.md', \
+          'https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx']) \
           ORDER BY filename;",
 };
 
