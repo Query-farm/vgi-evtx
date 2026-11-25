@@ -21,7 +21,7 @@ output composes with [`vgi-sigma`](../vgi-sigma)'s
 
 ```sql
 LOAD vgi;
-ATTACH 'evtx' (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-evtx@v0.4.2');
+ATTACH 'evtx' (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-evtx@v0.5.0');
 SET search_path = 'evtx.main';
 
 -- A small sample Security log, pinned to a release tag so it resolves anywhere.
@@ -62,7 +62,7 @@ Every [GitHub release](https://github.com/Query-farm/vgi-evtx/releases) ships a 
 INSTALL vgi FROM community;
 LOAD vgi;
 
-ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-evtx@v0.4.2');
+ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-evtx@v0.5.0');
 
 -- Validate that a file's bytes (a sample Security log) are a parseable .evtx.
 SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')));
@@ -71,14 +71,14 @@ SELECT evtx.main.is_valid_evtx((SELECT content FROM read_blob('https://raw.githu
 SELECT evtx.main.evtx_record_count((SELECT content FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-evtx/v0.4.0/test/sql/data/sample-security.evtx')));
 ```
 
-Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64). `github-auto://` needs an explicit release tag; change `@v0.4.2` to move to a newer release.
+Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64). `github-auto://` needs an explicit release tag; change `@v0.5.0` to move to a newer release.
 
 ### Other ways to run it
 
 - **Docker** (the image bundles the worker; needs a container runtime):
 
   ```sql
-  ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-evtx:0.4.2');
+  ATTACH 'evtx' AS evtx (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-evtx:0.5.0');
   ```
 
 - **Manual download.** Download the archive for your platform from the [releases page](https://github.com/Query-farm/vgi-evtx/releases), verify it against its `.sha256` file (a cosign `.cosign.bundle` is published alongside), unpack it, and set `LOCATION` to the path of the extracted worker executable.
@@ -144,7 +144,7 @@ make lint                        # clippy -D warnings + rustfmt --check
 ```
 
 The SQL E2E suite uses [`haybarn-unittest`](https://pypi.org/project/haybarn-unittest/)
-(`uv tool install --prerelease allow 'haybarn-unittest>=2.0.0rc11,<2.1'`).
+(`uv tool install --prerelease allow 'haybarn-unittest>=2.0.1rc3,<2.1'`).
 
 ## The `.evtx` parser
 
